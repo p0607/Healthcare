@@ -1,0 +1,245 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  user
+  nurse
+  admin
+}
+
+enum AdminTier {
+  admin
+  super_admin
+}
+
+enum RequestStatus {
+  pending
+  accepted
+  on_the_way
+  in_progress
+  completed
+  cancelled
+}
+
+enum ServiceType {
+  nurse_visit
+  doctor_consult
+  physiotherapy
+  iv_drip
+  wound_care
+  elderly_care
+  emergency
+}
+
+model User {
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  phone          String?
+  password       String
+  role           Role       @default(user)
+  /// Platform admin tier — only when role = admin. Set by seed/CLI, never public register.
+  adminTier      AdminTier?
+  /// All account types on this login (patient, guardian, service_provider). Session role is `role`.
+  accountKinds   String[]   @default(["patient"])
+  /// Primary booking tab: nurse, doctor, physio, or emergency (caregivers only; matches admin catalog tabs).
+  caregiverCategory ServiceType?
+  /// Marketing section chosen at service registration (smart-care, lifeline-care, etc.)
+  serviceSectionId String?
+
+  // Nurse / doctor specific
+  specialization String?
+  licenseNumber  String?
+  available      Boolean  @default(true)
+  accountActive  Boolean  @default(true)
+  profilePhotoUrl String? @db.Text
+  about          String?
+  certifications Json     @default("[]")
+  notifyNewJobs  Boolean  @default(true)
+  notifySms      Boolean  @default(false)
+  /// Expo push token for SOS alerts when the app is in background.
+  expoPushToken  String?  @db.Text
+  rating         Float    @default(4.8)
+  /// Typical home-visit fee (INR) shown to patients when booking this caregiver
+  visitRate      Int      @default(599)
+
+  /// Where completed job payouts are sent (caregiver only).
+  payoutMethod          String?
+  payoutAccountHolder   String?
+  payoutBankName        String?
+  payoutAccountNumber   String?
+  payoutIfsc            String?
+  payoutUpiId           String?
+
+  // Patient insurance & identity (optional at signup; completed on profile page)
+  policyholderName           String?
+  policyNumber               String?
+  healthCardId               String?
+  patientFullName            String?
+  patientDateOfBirth         DateTime? @db.Date
+  patientGender              String?
+  relationshipToPolicyholder String?
+
+  /// Comprehensive healthcare profile (demographics, guardians, medical baseline, insurance, etc.)
+  healthProfile Json @default("{}")
+
+  /// Up to 4 emergency contacts: [{ name, phone, email? }]
+  emergencyContacts Json @default("[]")
+  /// Guardian details when not yet linked to a guardian account
+  guardianContactName  String?
+  guardianContactEmail String?
+  guardianContactPhone String?
+
+  // Last known location (lng, lat)
+  lng            Float    @default(77.5946)
+  lat            Float    @default(12.9716)
+  address        String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  requestsAsUser  ServiceRequest[] @relation("UserRequests")
+  requestsAsNurse ServiceRequest[] @relation("NurseRequests")
+  bookingCart     PatientBookingCart?
+
+  /// Sub-services (visit-focus catalog lines) this caregiver offers, with their quoted INR rate.
+  nurseCareOfferings NurseCareOffering[]
+
+  guardianLinks   GuardianPatientLink[] @relation("GuardianAccount")
+  patientOfLinks  GuardianPatientLink[] @relation("PatientAccount")
+
+  @@index([role])
+  @@index([role, available])
+}
+
+/// Guardian account linked to one or more patient accounts they care for.
+model GuardianPatientLink {
+  id         String   @id @default(cuid())
+  guardianId String
+  patientId  String
+  guardian   User     @relation("GuardianAccount", fields: [guardianId], references: [id], onDelete: Cascade)
+  patient    User     @relation("PatientAccount", fields: [patientId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([guardianId, patientId])
+  @@index([guardianId])
+  @@index([patientId])
+}
+
+/// Patient “Visit focus” checklist items — managed by admin, scoped per booking tab (`serviceType`).
+model CareServiceOption {
+  id          String      @id @default(cuid())
+  label       String
+  description String?
+  imageUrl    String?
+  /// Add-on price (INR) for this visit-focus line item — admin-editable; summed at checkout with caregiver base fee.
+  rate        Int         @default(0)
+  serviceType ServiceType @default(nurse_visit)
+  active      Boolean     @default(true)
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([serviceType, active, sortOrder])
+
+  nurseOfferings NurseCareOffering[]
+}
+
+/// Caregiver-specific catalog line: which admin-defined sub-service they provide and at what INR rate.
+model NurseCareOffering {
+  id                  String            @id @default(cuid())
+  userId              String
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  careServiceOptionId String
+  careServiceOption   CareServiceOption @relation(fields: [careServiceOptionId], references: [id], onDelete: Cascade)
+  rate                Int               @default(0)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@unique([userId, careServiceOptionId])
+  @@index([userId])
+  @@index([careServiceOptionId])
+}
+
+/// Server-synced booking cart (items, caregivers, checkout meta) per patient.
+model PatientBookingCart {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payload   Json     @default("{}")
+  updatedAt DateTime @updatedAt
+}
+
+model ServiceRequest {
+  id          String        @id @default(cuid())
+
+  userId      String
+  user        User          @relation("UserRequests", fields: [userId], references: [id], onDelete: Cascade)
+
+  nurseId     String?
+  nurse       User?         @relation("NurseRequests", fields: [nurseId], references: [id])
+
+  serviceType ServiceType
+  notes       String?
+
+  lng         Float
+  lat         Float
+  address     String?
+
+  status      RequestStatus @default(pending)
+  /// Patient-requested visit time (schedule-for-later bookings).
+  scheduledAt DateTime?
+  acceptedAt  DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  cancelledAt DateTime?
+
+  rating      Int?
+  feedback    String?
+
+  /// Amount charged for this booking (INR), set when patient pays
+  feeAmount   Int?
+  paidAt      DateTime?
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([status])
+  @@index([userId])
+  @@index([nurseId])
+}
+
+/// Visit OTP codes for nurse start/complete handshake (persisted with attempt limits).
+model VisitOtp {
+  id        String   @id @default(cuid())
+  requestId String
+  purpose   String
+  otp       String
+  nurseId   String
+  userId    String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([requestId, purpose])
+  @@index([requestId])
+  @@index([expiresAt])
+}
+
+/// Email OTP for forgot-password flow (short-lived, attempt-limited).
+model PasswordResetOtp {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  otpHash   String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}

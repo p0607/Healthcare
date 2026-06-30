@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Nurse Care",
+    "slug": "nurse-care-mobile",
+    "scheme": "nursecare",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0a9bf0"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nursecare.app"
+    },
+    "android": {
+      "package": "com.nursecare.app",
+      "usesCleartextTraffic": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#0a9bf0"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "color": "#f43f5e"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Nurse Care to use your location for home visit addresses."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

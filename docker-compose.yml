@@ -1,0 +1,42 @@
+# Nurse Care — Docker Compose (API + Web)
+# Database: Azure Database for PostgreSQL (external — set DATABASE_URL in .env)
+#
+# Local test:
+#   copy .env.production.example .env
+#   docker compose up --build
+#   Web: http://localhost:8080   API direct: http://localhost:5050/api/health
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nursecare-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 5050
+    ports:
+      - "5050:5050"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5050/api/health | grep -q '\"ok\":true'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    container_name: nursecare-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8080:80"

@@ -1,0 +1,20 @@
+{
+  "name": "@nursecare/shared",
+  "version": "1.0.0",
+  "description": "Framework-agnostic business logic shared between the web and mobile clients.",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./caregiverServices": "./src/caregiverServices.js",
+    "./checkout": "./src/checkout.js",
+    "./addressFormat": "./src/addressFormat.js",
+    "./serviceCatalog": "./src/serviceCatalog.js",
+    "./patientProfile": "./src/patientProfile.js",
+    "./comprehensiveProfile": "./src/comprehensiveProfile.js",
+    "./sosAlert": "./src/sosAlert.js",
+    "./adminPermissions": "./src/adminPermissions.js"
+  },
+  "sideEffects": false,
+  "license": "UNLICENSED"
+}

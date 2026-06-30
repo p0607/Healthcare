@@ -1,0 +1,349 @@
+.care-pillar-orbit {
+  width: 100%;
+  max-width: 68rem;
+  margin-inline: auto;
+}
+
+.care-pillar-stage {
+  position: relative;
+  padding: 0.9rem 0 0.75rem;
+  overflow: visible;
+}
+
+.care-pillar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1.1rem 1.65rem;
+  padding: 0.25rem 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .care-pillar-row {
+    gap: 1rem 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .care-pillar-row {
+    gap: 1.4rem 2.75rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .care-pillar-orbit {
+    max-width: 100%;
+  }
+
+  .care-pillar-stage {
+    padding-top: 1.2rem;
+    padding-bottom: 1.25rem;
+  }
+
+  .care-pillar-row {
+    gap: 1.4rem 1rem;
+    justify-content: space-around;
+    padding-inline: 0.2rem;
+  }
+
+  .care-pillar-orbit-btn {
+    min-width: calc(50% - 0.75rem);
+    padding-inline: 0.1rem;
+  }
+
+  .care-pillar-orbit-btn__tile {
+    width: 9.5rem;
+    height: 9.5rem;
+  }
+
+  .care-pillar-orbit-btn.is-active .care-pillar-orbit-btn__tile,
+  .care-pillar-orbit-btn:hover .care-pillar-orbit-btn__tile,
+  .care-pillar-orbit-btn:focus-visible .care-pillar-orbit-btn__tile {
+    width: 7.75rem;
+    height: 7.75rem;
+  }
+
+  .care-pillar-orbit-btn__label {
+    font-size: 0.75rem;
+    max-width: 9.5rem;
+  }
+}
+
+.care-pillar-orbit-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.7rem;
+  min-width: 10rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  transition:
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    filter 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    z-index 0s;
+  opacity: 1;
+  filter: saturate(1.25) contrast(1.12);
+  z-index: 1;
+}
+
+.care-pillar-orbit-btn:hover,
+.care-pillar-orbit-btn.is-active,
+.care-pillar-orbit-btn:focus-visible {
+  opacity: 1;
+  filter: none;
+  transform: translateY(-1px);
+  z-index: 20;
+}
+
+.orbit-hover-panel {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  width: max-content;
+  max-width: min(14rem, 44vw);
+  margin-top: 0.75rem;
+  padding: 0 0.25rem 0.15rem;
+  pointer-events: auto;
+  animation: orbit-panel-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes orbit-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.orbit-hover-services {
+  list-style: none;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.orbit-hover-services li {
+  font-size: clamp(0.9375rem, 2.8vw, 1.125rem);
+  line-height: 1.2;
+  white-space: nowrap;
+  will-change: transform;
+  color: #000000;
+  font-weight: 900;
+  letter-spacing: 0.015em;
+  text-shadow: none;
+  animation-name: orbit-line-in, orbit-service-float;
+  animation-duration: 0.7s, 7s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1), cubic-bezier(0.37, 0, 0.63, 1);
+  animation-iteration-count: 1, infinite;
+  animation-fill-mode: backwards, none;
+}
+
+.orbit-hover-services li:nth-child(1) {
+  animation-delay: 0.08s, 0.78s;
+}
+.orbit-hover-services li:nth-child(2) {
+  animation-delay: 0.16s, 1.55s;
+}
+.orbit-hover-services li:nth-child(3) {
+  animation-delay: 0.24s, 2.32s;
+}
+.orbit-hover-services li:nth-child(4) {
+  animation-delay: 0.32s, 3.1s;
+}
+.orbit-hover-services li:nth-child(5) {
+  animation-delay: 0.4s, 3.88s;
+}
+.orbit-hover-services li:nth-child(6) {
+  animation-delay: 0.48s, 4.65s;
+}
+
+@keyframes orbit-service-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -4px, 0);
+  }
+}
+
+@keyframes orbit-line-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.orbit-hover-explore {
+  position: relative;
+  z-index: 3;
+  margin: 0;
+  padding: 0.2rem 0.35rem;
+  font-size: clamp(0.625rem, 1.8vw, 0.6875rem);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #000000;
+  background: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  text-align: center;
+  line-height: 1.35;
+  text-decoration: none;
+  text-shadow: none;
+  animation: orbit-line-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition:
+    color 0.2s ease,
+    text-shadow 0.2s ease;
+}
+
+.orbit-hover-explore:hover {
+  color: #000000;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-shadow: none;
+}
+
+.care-pillar-orbit-btn__tile {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 10rem;
+  height: 10rem;
+  border-radius: 0.65rem;
+  border: none;
+  background-color: transparent;
+  color: #000000;
+  box-shadow:
+    0 10px 24px rgb(15 23 42 / 0.14),
+    0 2px 6px rgb(15 23 42 / 0.08);
+  animation: orbit-tile-float 5.8s ease-in-out infinite;
+  transition:
+    width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    height 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.35s ease;
+  overflow: hidden;
+}
+
+.care-pillar-orbit-btn__tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 1;
+}
+
+/* One square: photo fills the tile (source assets are circular-on-white; zoom crops corners) */
+.care-pillar-orbit-btn__tile--photo {
+  border: 3px solid #e5e7eb;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 168% 168%;
+  color: transparent;
+  box-sizing: border-box;
+}
+
+.care-pillar-orbit-btn__tile--photo::before {
+  display: none;
+}
+
+.care-pillar-orbit-btn__icon {
+  position: relative;
+  z-index: 2;
+}
+
+.care-pillar-orbit-btn__tile > svg {
+  position: relative;
+  z-index: 2;
+  color: #ffffff;
+  stroke-width: 2.35;
+}
+
+.care-pillar-orbit-btn.is-active .care-pillar-orbit-btn__tile,
+.care-pillar-orbit-btn:hover .care-pillar-orbit-btn__tile,
+.care-pillar-orbit-btn:focus-visible .care-pillar-orbit-btn__tile {
+  width: 8rem;
+  height: 8rem;
+  box-shadow:
+    0 14px 30px rgb(15 23 42 / 0.18),
+    0 4px 10px rgb(15 23 42 / 0.1);
+}
+
+.care-pillar-orbit-btn:nth-child(2) .care-pillar-orbit-btn__tile {
+  animation-delay: 0.65s;
+}
+
+.care-pillar-orbit-btn:nth-child(3) .care-pillar-orbit-btn__tile {
+  animation-delay: 1.3s;
+}
+
+.care-pillar-orbit-btn:nth-child(4) .care-pillar-orbit-btn__tile {
+  animation-delay: 1.95s;
+}
+
+@keyframes orbit-tile-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+.care-pillar-orbit-btn__label {
+  position: relative;
+  z-index: 2;
+  min-height: 1.65rem;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #000000;
+  max-width: 9.5rem;
+  text-align: center;
+  line-height: 1.15;
+  transition: color 0.25s ease;
+  margin-top: 0.35rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbit-hover-panel,
+  .orbit-hover-services li,
+  .orbit-hover-explore {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .care-pillar-orbit-btn,
+  .care-pillar-orbit-btn__tile {
+    animation: none;
+    transition: none;
+  }
+
+}

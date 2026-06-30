@@ -1,0 +1,10 @@
+Card number (success): 4242 4242 4242 4242
+Expiry: any future date (e.g. 12/34)
+CVV: any 3 digits (e.g. 123)
+Name: any test name
+ZIP/Postal: any valid format (e.g. 560001)
+
+Declined card: 4000 0000 0000 0002
+Insufficient funds: 4000 0000 0000 9995
+3D Secure required: 4000 0027 6000 3184
+

@@ -1,0 +1,31 @@
+{
+  "name": "nurse-care-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Nurse Care — shared logic for web + mobile clients and the Express API.",
+  "workspaces": [
+    "mobile",
+    "packages/*"
+  ],
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "comment": "frontend/ and backend/ keep their own package.json and are installed/run from their own folders for now. Only mobile + packages/* are managed as npm workspaces. Root app.json + main point Metro at mobile/ so `npx expo start` from here works.",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "npm run start --workspace=nurse-care-mobile",
+    "mobile": "npm run start --workspace=nurse-care-mobile",
+    "mobile:emulator": "npm run start:emulator --workspace=nurse-care-mobile",
+    "mobile:phone": "npm run start:phone --workspace=nurse-care-mobile",
+    "mobile:start:phone": "npm run start:phone --workspace=nurse-care-mobile",
+    "mobile:open": "npm run open:emulator --workspace=nurse-care-mobile",
+    "env:phone": "npm run env:phone --workspace=nurse-care-mobile",
+    "env:emulator": "npm run env:emulator --workspace=nurse-care-mobile",
+    "backend": "npm run dev:clean --prefix backend",
+    "backend:firewall": "npm run allow-firewall --prefix backend"
+  },
+  "dependencies": {
+    "react-native-web": "^0.21.0"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "name": "nurse-care-backend",
+  "version": "1.0.0",
+  "description": "Nurse Care backend API (Tez Health clone) with Express, PostgreSQL (Prisma), JWT and Socket.io",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "dev:clean": "powershell -ExecutionPolicy Bypass -File scripts/kill-port.ps1 && nodemon src/server.js",
+    "kill-port": "powershell -ExecutionPolicy Bypass -File scripts/kill-port.ps1",
+    "db:fix-locations": "node scripts/reset-misplaced-caregivers.js",
+    "db:push": "prisma db push",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:status": "prisma migrate status",
+    "db:migrate:baseline": "prisma migrate resolve --applied 20250619000000_init",
+    "db:generate": "powershell -ExecutionPolicy Bypass -File scripts/prisma-generate-safe.ps1",
+    "db:studio": "prisma studio",
+    "db:setup": "node scripts/setup-db.js",
+    "db:init": "node scripts/init-db.js",
+    "db:init:seed": "node scripts/init-db.js --seed",
+    "db:reset": "node scripts/reset-db.js",
+    "seed": "node src/seed.js",
+    "create-admin": "node scripts/create-admin.js",
+    "generate-jwt-secret": "node scripts/generate-jwt-secret.js",
+    "setup": "node scripts/setup-db.js && prisma generate && prisma db push && node src/seed.js",
+    "postinstall": "prisma generate || echo \"Prisma generate skipped (will run later)\""
+  },
+  "dependencies": {
+    "@prisma/client": "^5.20.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.5.1",
+    "helmet": "^8.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "nodemailer": "^6.10.1",
+    "pg": "^8.13.0",
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4",
+    "prisma": "^5.20.0"
+  }
+}
