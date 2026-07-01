@@ -2,7 +2,6 @@ const prisma = require('./prisma');
 const { isSmtpConfigured } = require('./mail');
 
 async function checkHealth() {
-  const isProd = process.env.NODE_ENV === 'production';
   let db = 'down';
 
   try {
@@ -13,7 +12,7 @@ async function checkHealth() {
   }
 
   const smtpReady = isSmtpConfigured();
-  const ok = db === 'up' && (!isProd || smtpReady);
+  const ok = db === 'up';
 
   return {
     ok,
