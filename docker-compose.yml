@@ -1,7 +1,26 @@
 # Nurse Care — Docker Compose (API + Web)
-# Database: Azure PostgreSQL (external — set DATABASE_URL in .env)
+# Database: dedicated local PostgreSQL container (service "db", not published to the host —
+# port 5432 is already taken by another app's Postgres on this server). DATABASE_URL in .env
+# should point at db:5432 (see .env.production.example).
 
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: nursecare-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nursecare}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-nurse_care}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nursecare} -d ${POSTGRES_DB:-nurse_care}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   api:
     build:
       context: ./backend
@@ -13,6 +32,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5050
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "5050:5050"
     volumes:
@@ -41,3 +63,4 @@ services:
 
 volumes:
   api-catalog:
+  db-data:
