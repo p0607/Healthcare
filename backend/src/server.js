@@ -15,13 +15,14 @@ const { isSmtpConfigured } = require('./lib/mail');
 validateEnv();
 
 const PORT = process.env.PORT || 5050;
+const isProd = process.env.NODE_ENV === 'production';
 
 (async () => {
   try {
     await connectDB();
     await purgeExpiredOtps();
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (!isProd) {
       const repaired = await repairMisplacedCaregivers(prisma);
       if (repaired > 0) {
         console.log(`Repaired ${repaired} misplaced caregiver location(s) on startup`);
@@ -29,9 +30,6 @@ const PORT = process.env.PORT || 5050;
     }
 
     const server = http.createServer(app);
-
-    const careLayers = require('./routes/careServices').stack?.length;
-    console.log(`Care-services admin routes mounted (router layers): ${careLayers ?? '?'}`);
 
     const io = new Server(server, {
       cors: {
@@ -57,25 +55,29 @@ const PORT = process.env.PORT || 5050;
 
     server.listen(PORT, '0.0.0.0', () => {
       console.log(`API listening on http://localhost:${PORT}`);
-      const lan = [];
-      for (const nets of Object.values(os.networkInterfaces())) {
-        for (const net of nets) {
-          const v4 = net.family === 'IPv4' || net.family === 4;
-          if (v4 && !net.internal) lan.push(`http://${net.address}:${PORT}`);
+
+      if (!isProd) {
+        const lan = [];
+        for (const nets of Object.values(os.networkInterfaces())) {
+          for (const net of nets) {
+            const v4 = net.family === 'IPv4' || net.family === 4;
+            if (v4 && !net.internal) lan.push(`http://${net.address}:${PORT}`);
+          }
+        }
+        if (lan.length) {
+          console.log('  LAN URLs:');
+          lan.forEach((url) => console.log(`    ${url}`));
         }
       }
-      if (lan.length) {
-        console.log('  On your LAN (for direct API tests):');
-        lan.forEach((url) => console.log(`    ${url}`));
-      }
-      console.log('  Frontend dev (use this on other devices): http://<your-pc-ip>:5173');
-      if (process.env.NODE_ENV === 'production') {
-        console.log('  [mail] SMTP configured for password reset emails.');
+
+      if (isProd) {
+        if (isSmtpConfigured()) {
+          console.log('  [mail] SMTP ready');
+        } else {
+          console.warn('  [mail] SMTP not configured — forgot-password will fail');
+        }
       } else if (!isSmtpConfigured()) {
-        console.log(
-          '  [mail] SMTP not configured — password reset codes print here and in the app (dev only).'
-        );
-        console.log('  [mail] Add SMTP_HOST, SMTP_USER, SMTP_PASS to backend/.env to send real email.');
+        console.log('  [mail] SMTP not configured (dev — OTP shown in terminal)');
       }
     });
 
@@ -88,7 +90,8 @@ const PORT = process.env.PORT || 5050;
     process.on('SIGTERM', shutdown);
 
     process.on('unhandledRejection', (reason) => {
-      console.error('Unhandled promise rejection (API kept running):', reason);
+      console.error('Unhandled promise rejection:', reason);
+      if (isProd) process.exit(1);
     });
   } catch (err) {
     console.error('\nFailed to start server:\n  ', err.message, '\n');

@@ -1,5 +1,6 @@
 const fs = require('fs/promises');
 const path = require('path');
+const { audit } = require('../lib/auditLog');
 
 const DATA_FILE = path.join(__dirname, '../../data/bookingCategories.json');
 const MAX_IMAGE_CHARS = 600_000;
@@ -96,6 +97,18 @@ exports.update = async (req, res) => {
 
     stored[serviceType] = next;
     await writeStored(stored);
+
+    audit(req, {
+      action: 'catalog.booking_category.updated',
+      entityType: 'file:bookingCategories',
+      entityId: serviceType,
+      metadata: {
+        fields: [
+          ...(req.body.imageUrl !== undefined ? ['imageUrl'] : []),
+          ...(req.body.subtitle !== undefined ? ['subtitle'] : []),
+        ],
+      },
+    });
 
     const [category] = buildCategoryList(stored).filter((c) => c.serviceType === serviceType);
     res.json({ category });

@@ -10,6 +10,7 @@ COPY prisma ./prisma
 RUN npx prisma generate
 
 COPY src ./src
+COPY data ./data
 COPY scripts/docker-entrypoint.sh ./scripts/docker-entrypoint.sh
 RUN chmod +x ./scripts/docker-entrypoint.sh
 

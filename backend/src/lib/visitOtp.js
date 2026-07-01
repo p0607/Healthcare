@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const prisma = require('./prisma');
 
 const OTP_TTL_MS = Number(process.env.VISIT_OTP_TTL_MS || 5 * 60 * 1000);
@@ -14,13 +15,14 @@ async function purgeExpiredOtps() {
 }
 
 async function saveOtp({ requestId, purpose, otp, nurseId, userId }) {
+  const otpHash = await bcrypt.hash(String(otp), 10);
   const expiresAt = new Date(Date.now() + OTP_TTL_MS);
   await prisma.visitOtp.upsert({
     where: { requestId_purpose: { requestId, purpose } },
-    create: { requestId, purpose, otp, nurseId, userId, expiresAt, attempts: 0 },
-    update: { otp, nurseId, userId, expiresAt, attempts: 0 },
+    create: { requestId, purpose, otpHash, nurseId, userId, expiresAt, attempts: 0 },
+    update: { otpHash, nurseId, userId, expiresAt, attempts: 0 },
   });
-  return { expiresAt: expiresAt.getTime() };
+  return { expiresAt: expiresAt.getTime(), otp: String(otp) };
 }
 
 async function readOtp({ requestId, purpose }) {
@@ -37,6 +39,32 @@ async function readOtp({ requestId, purpose }) {
     return null;
   }
   return row;
+}
+
+async function verifyVisitOtp({ requestId, purpose, otp, nurseId }) {
+  const code = String(otp || '').trim();
+  if (code.length < 4) {
+    return { ok: false, reason: 'invalid', attemptsLeft: 0 };
+  }
+
+  const row = await readOtp({ requestId, purpose });
+  if (!row) return { ok: false, reason: 'missing', attemptsLeft: 0 };
+  if (row.nurseId !== nurseId) {
+    return { ok: false, reason: 'forbidden', attemptsLeft: 0 };
+  }
+
+  const match = await bcrypt.compare(code, row.otpHash);
+  if (!match) {
+    const attempt = await incrementOtpAttempts({ requestId, purpose });
+    return {
+      ok: false,
+      reason: attempt?.locked ? 'locked' : 'mismatch',
+      attemptsLeft: attempt?.attemptsLeft ?? 0,
+    };
+  }
+
+  await clearOtp({ requestId, purpose });
+  return { ok: true };
 }
 
 async function clearOtp({ requestId, purpose }) {
@@ -60,6 +88,7 @@ async function incrementOtpAttempts({ requestId, purpose }) {
   return { locked: false, attemptsLeft: MAX_OTP_ATTEMPTS - attempts };
 }
 
+/** Pending OTP metadata for patient UI — never returns the code (hash-only storage). */
 async function getPendingOtpForRequest(requestId) {
   try {
     const rows = await prisma.visitOtp.findMany({
@@ -74,8 +103,8 @@ async function getPendingOtpForRequest(requestId) {
     const current = rows[0];
     return {
       purpose: current.purpose,
-      otp: current.otp,
       expiresAt: current.expiresAt.getTime(),
+      active: true,
     };
   } catch (err) {
     console.warn('getPendingOtpForRequest failed:', err.message);
@@ -90,6 +119,7 @@ module.exports = {
   purgeExpiredOtps,
   saveOtp,
   readOtp,
+  verifyVisitOtp,
   clearOtp,
   incrementOtpAttempts,
   getPendingOtpForRequest,

@@ -91,6 +91,7 @@ const { inferCaregiverCategory } = require('../lib/registerServices');
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    algorithm: 'HS256',
   });
 
 /** Base visit display fee: explicit value, else lowest selected sub-service rate. */

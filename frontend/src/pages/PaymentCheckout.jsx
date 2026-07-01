@@ -13,6 +13,8 @@ import {
 import { api } from '../lib/api';
 import { caregiverRecordId, isValidPin } from '../lib/checkout';
 import { getSocket } from '../lib/socket';
+import { loadRazorpayScript, openRazorpayCheckout } from '../lib/razorpay';
+import { useAuth } from '../context/AuthContext';
 
 const fmtInr = (n) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(
@@ -26,10 +28,11 @@ function initialsFromName(name) {
   return parts[0].slice(0, 2).toUpperCase();
 }
 
-/** Demo checkout UI — no real PSP; confirms booking same as previous dashboard flow */
+/** Checkout — Razorpay when configured, demo fallback in local dev */
 const PaymentCheckout = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const checkout = location.state?.checkout;
 
   const [method, setMethod] = useState('card');
@@ -42,6 +45,7 @@ const PaymentCheckout = () => {
   const [quoteLoading, setQuoteLoading] = useState(true);
   const [feeAmount, setFeeAmount] = useState(0);
   const [lineItems, setLineItems] = useState([]);
+  const [razorpayEnabled, setRazorpayEnabled] = useState(false);
 
   const nurse = checkout?.nurse;
   const nurseId = caregiverRecordId(nurse);
@@ -75,6 +79,21 @@ const PaymentCheckout = () => {
       navigate('/dashboard/cart', { replace: true });
     }
   }, [checkout, nurseId, pin, navigate]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await api.get('/payments/razorpay/config');
+        if (!cancelled) setRazorpayEnabled(Boolean(data.enabled));
+      } catch {
+        if (!cancelled) setRazorpayEnabled(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!nurseId || !careOptionIdsKey) return;
@@ -131,6 +150,7 @@ const PaymentCheckout = () => {
 
   const payDisabled = useMemo(() => {
     if (submitting || quoteLoading || feeAmount <= 0) return true;
+    if (razorpayEnabled) return false;
     if (method === 'card') {
       return (
         cardDigits.length < 12 ||
@@ -143,42 +163,96 @@ const PaymentCheckout = () => {
       return !/^[\w.-]+@[\w]+$/.test(upiId.trim());
     }
     return false;
-  }, [submitting, quoteLoading, feeAmount, method, cardDigits, cardExpiryDigits, cardCvv, cardName, upiId]);
+  }, [submitting, quoteLoading, feeAmount, razorpayEnabled, method, cardDigits, cardExpiryDigits, cardCvv, cardName, upiId]);
+
+  const completeBooking = async (paymentPayload) => {
+    const scheduleNote = scheduledAt
+      ? `Scheduled for: ${new Date(scheduledAt).toLocaleString()}`
+      : '';
+    const combinedNotes = [visitNotes, scheduleNote].filter(Boolean).join(' | ');
+
+    const { data } = await api.post('/requests', {
+      serviceType: checkoutServiceType,
+      notes: combinedNotes || visitNotes,
+      location: { type: 'Point', coordinates: pin, address },
+      nurseId,
+      feeAmount,
+      selectedCareOptionIds,
+      scheduledAt: scheduledAt || undefined,
+      ...paymentPayload,
+    });
+
+    const s = getSocket();
+    if (s) s.emit('request:join', data.request._id);
+
+    toast.success(`Paid ${fmtInr(feeAmount)} · Booked with ${nurse.name}`);
+    navigate('/dashboard', {
+      replace: true,
+      state: {
+        mainPanel: 'book',
+        bookingComplete: true,
+        postBookingRequestId: data.request._id,
+      },
+    });
+  };
 
   const confirmPayment = async () => {
     if (!nurseId || !isValidPin(pin)) return;
     setSubmitting(true);
-    try {
-      const scheduleNote = scheduledAt
-        ? `Scheduled for: ${new Date(scheduledAt).toLocaleString()}`
-        : '';
-      const combinedNotes = [visitNotes, scheduleNote].filter(Boolean).join(' | ');
 
-      const { data } = await api.post('/requests', {
-        serviceType: checkoutServiceType,
-        notes: combinedNotes || visitNotes,
-        location: { type: 'Point', coordinates: pin, address },
-        nurseId,
-        feeAmount,
-        paymentConfirmed: true,
-        selectedCareOptionIds,
-        scheduledAt: scheduledAt || undefined,
-      });
-      const s = getSocket();
-      if (s) s.emit('request:join', data.request._id);
-      toast.success(`Paid ${fmtInr(feeAmount)} · Booked with ${nurse.name} (demo)`);
-      navigate('/dashboard', {
-        replace: true,
-        state: {
-          mainPanel: 'book',
-          bookingComplete: true,
-          postBookingRequestId: data.request._id,
-        },
-      });
+    try {
+      if (razorpayEnabled) {
+        const scriptReady = await loadRazorpayScript();
+        if (!scriptReady) {
+          toast.error('Could not load Razorpay checkout');
+          return;
+        }
+
+        const order = await api.post('/payments/razorpay/order', {
+          nurseId,
+          serviceType: checkoutServiceType,
+          selectedCareOptionIds,
+        });
+
+        const { orderId, amount, currency, keyId } = order.data;
+        if (Number(order.data.totalFee) !== feeAmount) {
+          setFeeAmount(Number(order.data.totalFee) || feeAmount);
+        }
+
+        openRazorpayCheckout({
+          keyId,
+          orderId,
+          amount,
+          currency,
+          user,
+          onSuccess: async (response) => {
+            try {
+              await completeBooking({
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+              });
+            } catch (err) {
+              toast.error(err?.response?.data?.message || 'Booking failed after payment');
+            } finally {
+              setSubmitting(false);
+            }
+          },
+          onFailure: (err) => {
+            if (err?.message !== 'Payment cancelled') {
+              toast.error(err?.message || 'Payment failed');
+            }
+            setSubmitting(false);
+          },
+        });
+        return;
+      }
+
+      await completeBooking({ paymentConfirmed: true });
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Payment failed');
     } finally {
-      setSubmitting(false);
+      if (!razorpayEnabled) setSubmitting(false);
     }
   };
 
@@ -232,7 +306,7 @@ const PaymentCheckout = () => {
           </div>
           <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/80 rounded-full px-2.5 py-1">
             <ShieldCheck className="w-3.5 h-3.5" strokeWidth={2} aria-hidden />
-            PCI-ready demo · No real charge
+            {razorpayEnabled ? 'Secured by Razorpay' : 'Dev demo · No real charge'}
           </div>
         </div>
 
@@ -280,8 +354,9 @@ const PaymentCheckout = () => {
               </div>
             </div>
             <p className="text-[10px] text-slate-500 leading-relaxed px-1">
-              This screen mimics card and UPI gateways for demos only. Submitting confirms your booking with the same API
-              as before — no bank or UPI server is contacted.
+              {razorpayEnabled
+                ? 'Pay with UPI, cards, or netbanking via Razorpay. Your booking is confirmed only after successful payment.'
+                : 'Local dev mode — payment is simulated. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET to backend/.env for real checkout.'}
             </p>
           </aside>
 
@@ -292,6 +367,8 @@ const PaymentCheckout = () => {
             </div>
 
             <div className="p-4 space-y-4">
+              {!razorpayEnabled ? (
+              <>
               <div className="flex flex-col sm:flex-row gap-2">
                 {tabBtn('card', 'Card', CreditCard)}
                 {tabBtn('upi', 'UPI', Smartphone)}
@@ -419,6 +496,12 @@ const PaymentCheckout = () => {
                   </>
                 )}
               </div>
+              </>
+              ) : (
+                <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 text-sm text-slate-600">
+                  Razorpay checkout supports UPI, cards, wallets, and netbanking. Click Pay below to open the secure payment window.
+                </div>
+              )}
 
               <button
                 type="button"
@@ -432,8 +515,8 @@ const PaymentCheckout = () => {
 
               <div className="flex flex-wrap justify-center gap-3 text-[10px] text-slate-400 pt-1.5 border-t border-slate-100">
                 <span>256-bit encryption</span>
-                <span>Razorpay-style demo UI</span>
-                <span>No card data stored</span>
+                <span>{razorpayEnabled ? 'Powered by Razorpay' : 'Demo checkout'}</span>
+                <span>No card data stored on our servers</span>
               </div>
             </div>
           </div>

@@ -9,6 +9,7 @@ const {
 const { isCaregiverCategory } = require('../lib/caregiverCategories');
 const { rejectCaregiverLocationUpdate, normalizeCaregiverCoords } = require('../lib/caregiverLocation');
 const { ADMIN_TIERS, isSuperAdminUser } = require('../lib/adminPermissions');
+const { audit } = require('../lib/auditLog');
 
 // Public: list nurses (optionally near a point)
 exports.listNurses = async (req, res) => {
@@ -376,6 +377,12 @@ exports.adminUpdateUser = async (req, res) => {
     await prisma.user.update({ where: { id }, data });
     const full =
       effectiveRole === 'nurse' ? await loadUserWithOfferings(id) : await prisma.user.findUnique({ where: { id } });
+    audit(req, {
+      action: 'user.admin_updated',
+      entityType: 'User',
+      entityId: id,
+      metadata: { fields: Object.keys(data) },
+    });
     return res.json({ user: toSafeUser(full) });
   } catch (err) {
     console.error('adminUpdateUser failed:', err);

@@ -1,9 +1,10 @@
 const router = require('express').Router();
 const { protect, authorize, requireAdmin, requirePermission } = require('../middleware/auth');
+const { publicApiLimiter } = require('../middleware/rateLimit');
 const c = require('../controllers/nurseController');
 
 router.get('/', c.listNurses);
-router.get('/available', c.listAvailableAt);
+router.get('/available', publicApiLimiter, c.listAvailableAt);
 router.put('/me', protect, authorize('nurse'), c.updateMe);
 router.patch('/me/settings', protect, authorize('nurse'), c.updateSettings);
 router.get('/me/payments', protect, authorize('nurse'), c.myPayments);

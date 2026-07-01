@@ -1,5 +1,6 @@
 const prisma = require('../lib/prisma');
 const { isCaregiverCategory } = require('../lib/caregiverCategories');
+const { audit } = require('../lib/auditLog');
 
 const REGISTER_TYPE_LABELS = {
   nurse_visit: 'Nurse',
@@ -96,6 +97,12 @@ exports.create = async (req, res) => {
       sortOrder: Number.isFinite(Number(sortOrder)) ? Number(sortOrder) : 0,
     },
   });
+  audit(req, {
+    action: 'catalog.care_service.created',
+    entityType: 'CareServiceOption',
+    entityId: option.id,
+    metadata: { label: trimmed, serviceType: st, rate: r },
+  });
   res.status(201).json({ option });
 };
 
@@ -125,6 +132,12 @@ exports.update = async (req, res) => {
       where: { id },
       data,
     });
+    audit(req, {
+      action: 'catalog.care_service.updated',
+      entityType: 'CareServiceOption',
+      entityId: id,
+      metadata: { fields: Object.keys(data) },
+    });
     res.json({ option });
   } catch {
     res.status(404).json({ message: 'Option not found' });
@@ -135,6 +148,11 @@ exports.remove = async (req, res) => {
   const { id } = req.params;
   try {
     await prisma.careServiceOption.delete({ where: { id } });
+    audit(req, {
+      action: 'catalog.care_service.deleted',
+      entityType: 'CareServiceOption',
+      entityId: id,
+    });
     res.json({ ok: true });
   } catch {
     res.status(404).json({ message: 'Option not found' });

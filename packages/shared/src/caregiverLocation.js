@@ -1,6 +1,15 @@
 /** Prisma default seed location (Bengaluru) — used for demo caregivers. */
 export const DEFAULT_SEED_COORDS = [77.5946, 12.9716];
 
+/**
+ * Nurse live tracking: GPS coordinates only (free). Persist + socket emit on this interval.
+ * Reverse geocoding is skipped during live tracking to avoid map API / Nominatim load.
+ */
+export const CAREGIVER_LIVE_LOCATION_INTERVAL_MS = 3 * 60 * 1000;
+
+/** Minimum movement before an early save is considered (still capped by interval). */
+export const CAREGIVER_MIN_MOVE_METERS = 45;
+
 export function distanceMeters(a, b) {
   if (!Array.isArray(a) || !Array.isArray(b) || a.length < 2 || b.length < 2) return Infinity;
   const [lng1, lat1] = a;

@@ -2,14 +2,19 @@ const prisma = require('../lib/prisma');
 const { toRequest } = require('../lib/format');
 const { computeBookingFee } = require('../lib/bookingFee');
 const {
+  isRazorpayConfigured,
+  verifyPaymentSignature,
+  assertPaymentCaptured,
+} = require('../lib/razorpay');
+const { assertPaymentUnused } = require('./paymentController');
+const {
   OTP_TTL_MS,
   randomOtp,
   saveOtp,
-  readOtp,
-  clearOtp,
-  incrementOtpAttempts,
+  verifyVisitOtp: verifyVisitOtpCode,
   getPendingOtpForRequest,
 } = require('../lib/visitOtp');
+const { audit } = require('../lib/auditLog');
 
 const getIO = (req) => req.app.get('io');
 
@@ -17,6 +22,63 @@ const REQUEST_INCLUDE = {
   user: true,
   nurse: true,
 };
+
+async function resolveBookingPayment(req, totalFee) {
+  const {
+    razorpayOrderId,
+    razorpayPaymentId,
+    razorpaySignature,
+    paymentConfirmed,
+  } = req.body;
+
+  if (isRazorpayConfigured()) {
+    if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+      const err = new Error('Complete Razorpay payment before booking');
+      err.status = 402;
+      throw err;
+    }
+
+    if (
+      !verifyPaymentSignature({
+        orderId: razorpayOrderId,
+        paymentId: razorpayPaymentId,
+        signature: razorpaySignature,
+      })
+    ) {
+      const err = new Error('Invalid payment signature');
+      err.status = 400;
+      throw err;
+    }
+
+    await assertPaymentUnused(razorpayPaymentId);
+    await assertPaymentCaptured(razorpayPaymentId, {
+      orderId: razorpayOrderId,
+      amountPaise: totalFee * 100,
+    });
+
+    return {
+      razorpayOrderId,
+      razorpayPaymentId,
+    };
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    const err = new Error('Payment gateway is not configured');
+    err.status = 503;
+    throw err;
+  }
+
+  if (!paymentConfirmed) {
+    const err = new Error('Complete payment before booking');
+    err.status = 402;
+    throw err;
+  }
+
+  return {
+    razorpayOrderId: null,
+    razorpayPaymentId: null,
+  };
+}
 
 // USER: server-calculated fee for checkout (visit-focus lines only, no basic visit fee)
 exports.quoteFee = async (req, res) => {
@@ -39,25 +101,28 @@ exports.quoteFee = async (req, res) => {
   }
 };
 
-// USER: create a new request — broadcast to nurses, OR direct book after choosing caregiver + payment (demo)
+// USER: create a new request after payment (Razorpay or dev demo)
 exports.createRequest = async (req, res) => {
   try {
-    const { serviceType, notes, location, nurseId, feeAmount, paymentConfirmed, selectedCareOptionIds, scheduledAt } =
-      req.body;
+    const {
+      serviceType,
+      notes,
+      location,
+      nurseId,
+      feeAmount,
+      selectedCareOptionIds,
+      scheduledAt,
+    } = req.body;
     if (!serviceType || !location?.coordinates) {
       return res
         .status(400)
         .json({ message: 'serviceType and location.coordinates are required' });
     }
-    const [lng, lat] = location.coordinates;
-    const io = getIO(req);
-
-    if (!paymentConfirmed) {
-      return res.status(402).json({ message: 'Complete payment before booking' });
-    }
     if (!nurseId) {
       return res.status(400).json({ message: 'Select a caregiver before payment' });
     }
+    const [lng, lat] = location.coordinates;
+    const io = getIO(req);
 
     let totalFee;
     try {
@@ -67,6 +132,13 @@ exports.createRequest = async (req, res) => {
     }
     if (feeAmount != null && Number(feeAmount) !== totalFee) {
       return res.status(400).json({ message: 'Fee does not match quoted price' });
+    }
+
+    let paymentMeta;
+    try {
+      paymentMeta = await resolveBookingPayment(req, totalFee);
+    } catch (err) {
+      return res.status(err.status || 402).json({ message: err.message });
     }
 
     const nurse = await prisma.user.findFirst({
@@ -97,6 +169,8 @@ exports.createRequest = async (req, res) => {
         status: 'pending',
         feeAmount: totalFee,
         paidAt: new Date(),
+        razorpayOrderId: paymentMeta.razorpayOrderId,
+        razorpayPaymentId: paymentMeta.razorpayPaymentId,
       },
       include: REQUEST_INCLUDE,
     });
@@ -108,6 +182,19 @@ exports.createRequest = async (req, res) => {
       io.to(`user:${nurse.id}`).emit('request:new', request);
       io.to('admins').emit('activity:new', { type: 'request_booked_direct', request });
     }
+
+    audit(req, {
+      action: 'request.created',
+      entityType: 'ServiceRequest',
+      entityId: created.id,
+      metadata: {
+        serviceType,
+        nurseId: nurse.id,
+        feeAmount: totalFee,
+        paid: true,
+        razorpayPaymentId: paymentMeta.razorpayPaymentId,
+      },
+    });
 
     return res.status(201).json({ request });
   } catch (err) {
@@ -166,6 +253,12 @@ exports.cancelRequest = async (req, res) => {
     io.to(`request:${request._id}`).emit('request:updated', request);
     io.to('admins').emit('activity:new', { type: 'request_cancelled', request });
   }
+  audit(req, {
+    action: 'request.cancelled',
+    entityType: 'ServiceRequest',
+    entityId: existing.id,
+    metadata: { previousStatus: existing.status },
+  });
   return res.json({ request });
 };
 
@@ -250,6 +343,12 @@ exports.acceptRequest = async (req, res) => {
     io.to('nurses').emit('request:taken', { id: request._id });
     io.to('admins').emit('activity:new', { type: 'request_on_the_way', request });
   }
+  audit(req, {
+    action: 'request.accepted',
+    entityType: 'ServiceRequest',
+    entityId: req.params.id,
+    metadata: { status: 'on_the_way' },
+  });
   return res.json({ request });
 };
 
@@ -335,7 +434,7 @@ exports.sendVisitOtp = async (req, res) => {
   }
 
   const otp = randomOtp();
-  const { expiresAt } = await saveOtp({
+  const { expiresAt, otp: issuedOtp } = await saveOtp({
     requestId: existing.id,
     purpose,
     otp,
@@ -349,13 +448,13 @@ exports.sendVisitOtp = async (req, res) => {
       requestId: existing.id,
       purpose,
       message: `OTP generated for ${purposeText(purpose)}.`,
-      otpPreview: otp,
+      otpPreview: issuedOtp,
     });
     io.to(`user:${existing.user.id}`).emit('request:otp-sync', {
       requestId: existing.id,
       pendingOtp: {
         purpose,
-        otp,
+        otp: issuedOtp,
         expiresAt,
       },
     });
@@ -363,9 +462,16 @@ exports.sendVisitOtp = async (req, res) => {
 
   if (process.env.NODE_ENV !== 'production') {
     console.log(
-      `[OTP] request=${existing.id} purpose=${purpose} phone=${existing.user.phone} otp=${otp}`
+      `[OTP] request=${existing.id} purpose=${purpose} phone=${existing.user.phone} otp=${issuedOtp}`
     );
   }
+
+  audit(req, {
+    action: 'visit_otp.sent',
+    entityType: 'ServiceRequest',
+    entityId: existing.id,
+    metadata: { purpose, patientId: existing.user.id },
+  });
 
   return res.json({
     message: `OTP sent to user phone for ${purposeText(purpose)}`,
@@ -387,20 +493,24 @@ exports.verifyVisitOtp = async (req, res) => {
   const { existing, error } = await loadOwnedRequest(req);
   if (error) return res.status(error.status).json({ message: error.message });
 
-  const stored = await readOtp({ requestId: existing.id, purpose });
-  if (!stored) {
-    return res.status(400).json({ message: 'OTP expired, locked, or not requested' });
-  }
-  if (stored.nurseId !== req.user.id) {
-    return res.status(403).json({ message: 'OTP was issued for another nurse session' });
-  }
-  if (stored.otp !== String(otp).trim()) {
-    const attempt = await incrementOtpAttempts({ requestId: existing.id, purpose });
-    if (attempt?.locked) {
+  const verified = await verifyVisitOtpCode({
+    requestId: existing.id,
+    purpose,
+    otp,
+    nurseId: req.user.id,
+  });
+  if (!verified.ok) {
+    if (verified.reason === 'forbidden') {
+      return res.status(403).json({ message: 'OTP was issued for another nurse session' });
+    }
+    if (verified.reason === 'locked') {
       return res.status(429).json({ message: 'Too many invalid OTP attempts. Request a new code.' });
     }
+    if (verified.reason === 'missing') {
+      return res.status(400).json({ message: 'OTP expired, locked, or not requested' });
+    }
     return res.status(400).json({
-      message: `Invalid OTP. ${attempt?.attemptsLeft ?? 0} attempt(s) remaining.`,
+      message: `Invalid OTP. ${verified.attemptsLeft ?? 0} attempt(s) remaining.`,
     });
   }
 
@@ -409,8 +519,6 @@ exports.verifyVisitOtp = async (req, res) => {
       message: `Cannot ${purposeText(purpose)} when request is ${existing.status}`,
     });
   }
-
-  await clearOtp({ requestId: existing.id, purpose });
 
   const updated = await prisma.serviceRequest.update({
     where: { id: existing.id },
@@ -432,6 +540,13 @@ exports.verifyVisitOtp = async (req, res) => {
     io.to(`user:${request.user._id}`).emit('request:updated', { ...request, pendingOtp: null });
     io.to('admins').emit('activity:new', { type: `request_${meta.nextStatus}`, request });
   }
+
+  audit(req, {
+    action: 'visit_otp.verified',
+    entityType: 'ServiceRequest',
+    entityId: existing.id,
+    metadata: { purpose, nextStatus: meta.nextStatus },
+  });
 
   return res.json({ message: `${purposeText(purpose)} verified`, request });
 };

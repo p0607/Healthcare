@@ -19,6 +19,9 @@ const ADMIN_TIER_PERMISSIONS = {
   ],
 };
 
+/** Super-admin-only capabilities (also covered by wildcard). */
+const SUPER_ADMIN_ONLY = ['admins.manage', 'admins.create', 'audit.read', 'users.promote_admin'];
+
 function resolveAdminTier(user) {
   if (user?.role !== 'admin') return null;
   return user.adminTier === ADMIN_TIERS.super_admin ? ADMIN_TIERS.super_admin : ADMIN_TIERS.admin;
@@ -83,6 +86,7 @@ function requirePermission(...permissions) {
 
 module.exports = {
   ADMIN_TIERS,
+  SUPER_ADMIN_ONLY,
   assertAdminUser,
   isSuperAdminUser,
   resolveAdminTier,

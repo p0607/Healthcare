@@ -206,6 +206,8 @@ model ServiceRequest {
   /// Amount charged for this booking (INR), set when patient pays
   feeAmount   Int?
   paidAt      DateTime?
+  razorpayOrderId   String?
+  razorpayPaymentId String? @unique
 
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -215,12 +217,12 @@ model ServiceRequest {
   @@index([nurseId])
 }
 
-/// Visit OTP codes for nurse start/complete handshake (persisted with attempt limits).
+/// Visit OTP codes for nurse start/complete handshake (bcrypt hash, attempt limits).
 model VisitOtp {
   id        String   @id @default(cuid())
   requestId String
   purpose   String
-  otp       String
+  otpHash   String
   nurseId   String
   userId    String
   attempts  Int      @default(0)
@@ -230,6 +232,25 @@ model VisitOtp {
   @@unique([requestId, purpose])
   @@index([requestId])
   @@index([expiresAt])
+}
+
+/// Immutable admin/security audit trail (Azure PostgreSQL).
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String?
+  actorRole   String
+  actorEmail  String?
+  action      String
+  entityType  String?
+  entityId    String?
+  metadata    Json     @default("{}")
+  ipAddress   String?
+  userAgent   String?  @db.VarChar(512)
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([action])
+  @@index([actorId])
 }
 
 /// Email OTP for forgot-password flow (short-lived, attempt-limited).

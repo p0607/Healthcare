@@ -1,5 +1,8 @@
 /**
- * OpenStreetMap Nominatim (demo). Debounce searches in the UI (see LocationSearch).
+ * Address search + reverse geocode via OpenStreetMap (Nominatim + Photon).
+ * Free for patient booking flows — do not replace with Google unless required.
+ * Nurse live tracking stores GPS coordinates only (see caregiverLocationTracking.js).
+ * Debounce searches in the UI (see LocationSearch).
  * https://operations.osmfoundation.org/policies/nominatim/
  */
 

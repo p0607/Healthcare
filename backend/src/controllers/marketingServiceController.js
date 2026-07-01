@@ -1,6 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const prisma = require('../lib/prisma');
+const { audit } = require('../lib/auditLog');
 
 const DATA_FILE = path.join(__dirname, '../../data/marketingServices.json');
 
@@ -290,6 +291,12 @@ exports.create = async (req, res) => {
   }
 
   await writeCatalog(sections);
+  audit(req, {
+    action: 'catalog.marketing.created',
+    entityType: 'file:marketingServices',
+    entityId: section.id,
+    metadata: { title: section.title, subServiceCount: cleanedSubServices.length },
+  });
   res.status(201).json({ section });
 };
 
@@ -305,6 +312,12 @@ exports.updateSection = async (req, res) => {
   }
   section.updatedAt = new Date().toISOString();
   await writeCatalog(sections);
+  audit(req, {
+    action: 'catalog.marketing.section_updated',
+    entityType: 'file:marketingServices',
+    entityId: section.id,
+    metadata: { fields: req.body.active !== undefined ? ['active'] : [] },
+  });
   res.json({ section });
 };
 
@@ -316,6 +329,12 @@ exports.removeSection = async (req, res) => {
   const [section] = sections.splice(index, 1);
   await Promise.all((section.services || []).map(removeCareOption));
   await writeCatalog(sections);
+  audit(req, {
+    action: 'catalog.marketing.section_deleted',
+    entityType: 'file:marketingServices',
+    entityId: section.id,
+    metadata: { title: section.title },
+  });
   res.json({ ok: true });
 };
 

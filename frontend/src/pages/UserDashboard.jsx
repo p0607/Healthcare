@@ -1806,14 +1806,20 @@ const UserDashboard = () => {
                         {r.notes && (
                           <div className="text-xs text-muted mt-2 italic leading-relaxed line-clamp-2">&quot;{r.notes}&quot;</div>
                         )}
-                        {r.pendingOtp?.otp && (
+                        {(r.pendingOtp?.otp || r.pendingOtp?.active) && (
                           <div className="mt-3 rounded-lg border border-brand-500/30 bg-brand-500/10 px-3 py-2">
                             <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-300">
                               {r.pendingOtp.purpose === 'start_visit' ? 'Start visit OTP' : 'Complete visit OTP'}
                             </p>
-                            <p className="text-base font-bold tracking-[0.24em] text-foreground tabular-nums mt-1">
-                              {r.pendingOtp.otp}
-                            </p>
+                            {r.pendingOtp.otp ? (
+                              <p className="text-base font-bold tracking-[0.24em] text-foreground tabular-nums mt-1">
+                                {r.pendingOtp.otp}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-muted mt-1">
+                                OTP pending — share the code from your notification with the nurse, or ask them to resend.
+                              </p>
+                            )}
                           </div>
                         )}
                         <div className="mt-3 flex justify-end items-center gap-3 pt-2.5 border-t border-white/10">
@@ -2060,16 +2066,22 @@ const UserDashboard = () => {
                       />
                     </div>
                   )}
-                  {selectedRequest?.pendingOtp?.otp && (
+                  {(selectedRequest?.pendingOtp?.otp || selectedRequest?.pendingOtp?.active) && (
                     <div className="rounded-xl border border-brand-500/30 bg-brand-500/10 px-3 py-2.5">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-300">
                         {selectedRequest.pendingOtp.purpose === 'start_visit'
                           ? 'Start visit OTP'
                           : 'Complete visit OTP'}
                       </p>
-                      <p className="text-xl font-bold tracking-[0.24em] text-white tabular-nums mt-1">
-                        {selectedRequest.pendingOtp.otp}
-                      </p>
+                      {selectedRequest.pendingOtp.otp ? (
+                        <p className="text-xl font-bold tracking-[0.24em] text-white tabular-nums mt-1">
+                          {selectedRequest.pendingOtp.otp}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted mt-1">
+                          OTP pending — check your notification or ask the nurse to resend.
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>

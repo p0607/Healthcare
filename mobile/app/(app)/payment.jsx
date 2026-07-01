@@ -1,5 +1,5 @@
 /**
- * Demo payment checkout — same API as web PaymentCheckout.jsx.
+ * Payment checkout — Razorpay when configured, demo fallback in local dev.
  */
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -19,6 +19,13 @@ import { useBookingCart } from '../../src/context/BookingCartContext';
 import TextField from '../../src/components/TextField';
 import { api, apiErrorMessage } from '../../src/api/client';
 import { colors, fontSize, radius, spacing } from '../../src/theme/theme';
+import { useAuth } from '../../src/context/AuthContext';
+import {
+  createRazorpayOrder,
+  fetchRazorpayConfig,
+  isNativeRazorpayAvailable,
+  openNativeRazorpayCheckout,
+} from '../../src/lib/razorpay';
 
 const fmtInr = (n) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(
@@ -27,6 +34,7 @@ const fmtInr = (n) =>
 
 export default function PaymentScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const { paymentCheckout, clearCart, setPaymentCheckout } = useBookingCart();
   const checkout = paymentCheckout;
 
@@ -40,6 +48,7 @@ export default function PaymentScreen() {
   const [quoteLoading, setQuoteLoading] = useState(true);
   const [feeAmount, setFeeAmount] = useState(0);
   const [lineItems, setLineItems] = useState([]);
+  const [razorpayEnabled, setRazorpayEnabled] = useState(false);
 
   const nurse = checkout?.nurse;
   const nurseId = caregiverRecordId(nurse);
@@ -74,6 +83,21 @@ export default function PaymentScreen() {
       ]);
     }
   }, [checkout, nurseId, pin, router]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const config = await fetchRazorpayConfig();
+        if (!cancelled) setRazorpayEnabled(Boolean(config.enabled));
+      } catch {
+        if (!cancelled) setRazorpayEnabled(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!nurseId || selectedCareOptionIds.length === 0) return;
@@ -114,35 +138,76 @@ export default function PaymentScreen() {
     submitting ||
     quoteLoading ||
     displayAmount <= 0 ||
-    (method === 'card' &&
+    (razorpayEnabled && !isNativeRazorpayAvailable()) ||
+    (!razorpayEnabled &&
+      method === 'card' &&
       (cardDigits.length < 12 ||
         cardExpiryDigits.length < 4 ||
         cardCvv.trim().length < 3 ||
         !cardName.trim())) ||
-    (method === 'upi' && !/^[\w.-]+@[\w]+$/.test(upiId.trim()));
+    (!razorpayEnabled && method === 'upi' && !/^[\w.-]+@[\w]+$/.test(upiId.trim()));
+
+  const completeBooking = async (paymentPayload) => {
+    await api.post('/requests', {
+      serviceType: checkoutServiceType,
+      notes: checkout?.visitNotes || '',
+      location: { type: 'Point', coordinates: pin, address },
+      nurseId,
+      feeAmount: displayAmount,
+      selectedCareOptionIds,
+      ...paymentPayload,
+    });
+    await clearCart();
+    setPaymentCheckout(null);
+    Alert.alert(
+      'Booking confirmed',
+      `Paid ${fmtInr(displayAmount)} · Booked with ${nurse.name}`,
+      [{ text: 'View bookings', onPress: () => router.replace('/(app)/bookings') }]
+    );
+  };
 
   const confirmPayment = async () => {
     if (!nurseId || !isValidPin(pin)) return;
     setSubmitting(true);
     try {
-      await api.post('/requests', {
-        serviceType: checkoutServiceType,
-        notes: checkout?.visitNotes || '',
-        location: { type: 'Point', coordinates: pin, address },
-        nurseId,
-        feeAmount: displayAmount,
-        paymentConfirmed: true,
-        selectedCareOptionIds,
-      });
-      await clearCart();
-      setPaymentCheckout(null);
-      Alert.alert(
-        'Booking confirmed',
-        `Paid ${fmtInr(displayAmount)} · Booked with ${nurse.name} (demo)`,
-        [{ text: 'View bookings', onPress: () => router.replace('/(app)/bookings') }]
-      );
+      if (razorpayEnabled) {
+        if (!isNativeRazorpayAvailable()) {
+          Alert.alert(
+            'Razorpay unavailable',
+            'Install the EAS production/dev build to pay with Razorpay. Expo Go cannot process payments.'
+          );
+          return;
+        }
+
+        const order = await createRazorpayOrder({
+          nurseId,
+          serviceType: checkoutServiceType,
+          selectedCareOptionIds,
+        });
+
+        const payment = await openNativeRazorpayCheckout({
+          keyId: order.keyId,
+          orderId: order.orderId,
+          amount: order.amount,
+          currency: order.currency,
+          user,
+        });
+
+        await completeBooking({
+          razorpayOrderId: payment.razorpay_order_id,
+          razorpayPaymentId: payment.razorpay_payment_id,
+          razorpaySignature: payment.razorpay_signature,
+          feeAmount: order.totalFee,
+        });
+        return;
+      }
+
+      await completeBooking({ paymentConfirmed: true });
     } catch (err) {
-      Alert.alert('Payment failed', apiErrorMessage(err, 'Could not complete booking.'));
+      const message = apiErrorMessage(err, 'Could not complete booking.');
+      if (message !== 'Payment cancelled') {
+        Alert.alert('Payment failed', message);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -169,7 +234,9 @@ export default function PaymentScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.demoBadge}>
           <Ionicons name="shield-checkmark" size={14} color="#047857" />
-          <Text style={styles.demoText}>PCI-ready demo · No real charge</Text>
+          <Text style={styles.demoText}>
+            {razorpayEnabled ? 'Secured by Razorpay' : 'Dev demo · No real charge'}
+          </Text>
         </View>
 
         <View style={styles.summary}>
@@ -204,6 +271,12 @@ export default function PaymentScreen() {
           </View>
         </View>
 
+        {razorpayEnabled ? (
+          <Text style={styles.netHint}>
+            Pay with UPI, cards, or netbanking via Razorpay. Requires the installed app build (not Expo Go).
+          </Text>
+        ) : (
+          <>
         <View style={styles.methodRow}>
           {['card', 'upi', 'netbanking'].map((id) => (
             <Pressable
@@ -278,6 +351,8 @@ export default function PaymentScreen() {
             still pay below to confirm this booking.
           </Text>
         ) : null}
+          </>
+        )}
 
         <Pressable
           style={({ pressed }) => [styles.payBtn, payDisabled && styles.payDisabled, pressed && styles.pressed]}

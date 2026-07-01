@@ -5,5 +5,7 @@ web-build/
 *.log
 .env
 .env.local
+google-play-service-account.json
+google-services.json
 *.orig.*
 .DS_Store

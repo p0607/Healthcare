@@ -5,3 +5,7 @@
 node_modules/
 dist/
 *.log
+
+# Mobile / Play Store secrets (use google-play-service-account.example.json as template)
+mobile/google-play-service-account.json
+mobile/google-services.json

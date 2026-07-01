@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Nurse Care",
-    "slug": "nurse-care-mobile",
+    "slug": "healthcare",
     "scheme": "nursecare",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -14,14 +14,21 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.nursecare.app"
+      "bundleIdentifier": "com.nursecare.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.nursecare.app",
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#0a9bf0"
-      }
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro"
@@ -44,6 +51,12 @@
     ],
     "experiments": {
       "typedRoutes": false
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "506abcc3-57e0-4aa2-95fe-8de5364b9449"
+      }
+    },
+    "owner": "alchemy-techsol"
   }
 }

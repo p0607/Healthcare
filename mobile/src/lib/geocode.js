@@ -1,6 +1,6 @@
 /**
- * OpenStreetMap Nominatim + Photon search (same sources as web app).
- * Framework-agnostic fetch — works in React Native.
+ * Address search + reverse geocode via OpenStreetMap (Nominatim).
+ * Patient address picker only — nurse live tracking sends coordinates without geocoding.
  */
 
 const NOMINATIM_HEADERS = {

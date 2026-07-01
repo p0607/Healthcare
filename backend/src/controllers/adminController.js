@@ -3,6 +3,7 @@ const prisma = require('../lib/prisma');
 const { toSafeUser } = require('../lib/format');
 const { validatePassword } = require('../lib/password');
 const { ADMIN_TIERS, isSuperAdminUser } = require('../lib/adminPermissions');
+const { audit } = require('../lib/auditLog');
 
 exports.listTeamAdmins = async (req, res) => {
   try {
@@ -61,6 +62,13 @@ exports.createTeamAdmin = async (req, res) => {
         adminTier,
         accountKinds: [],
       },
+    });
+
+    audit(req, {
+      action: 'admin.created',
+      entityType: 'User',
+      entityId: user.id,
+      metadata: { email, adminTier },
     });
 
     return res.status(201).json({
