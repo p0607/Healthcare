@@ -52,8 +52,9 @@ function validateEnv() {
     const smtpUser = process.env.SMTP_USER?.trim();
     const smtpPass = process.env.SMTP_PASS?.trim();
     if (!smtpHost || !smtpUser || !smtpPass) {
-      errors.push(
-        'SMTP_HOST, SMTP_USER, and SMTP_PASS are required in production (forgot-password email OTP)'
+      // eslint-disable-next-line no-console
+      console.warn(
+        'WARNING: SMTP_HOST, SMTP_USER, and SMTP_PASS are not fully set — forgot-password email OTP will not work until configured.'
       );
     }
   }
