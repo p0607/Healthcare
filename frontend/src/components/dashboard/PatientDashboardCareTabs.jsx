@@ -1,6 +1,6 @@
 import { cn } from '../../lib/utils';
 
-export const BOT_AVATAR_SRC = '/images/bot-avatar.png';
+export const BOT_AVATAR_SRC = `${import.meta.env.BASE_URL}images/bot-avatar.png`;
 
 const CARE_TABS = [
   { id: 'homecare', label: 'Homecare' },

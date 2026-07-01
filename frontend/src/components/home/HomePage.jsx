@@ -20,8 +20,8 @@ import { cn } from '../../lib/utils';
 const glassCard =
   'glass-panel p-5 sm:p-6 transition-all duration-300 hover:border-brand-500/35 hover:bg-glass-elevated/40';
 
-const HOW_IT_WORKS_IMAGE = `/images/service-subservices/${encodeURIComponent('how it works.jpg')}`;
-const AFTER_DOC_ON_CALL_IMAGE = '/images/service-subservices/afterdoconcall.jpg';
+const HOW_IT_WORKS_IMAGE = `${import.meta.env.BASE_URL}images/service-subservices/${encodeURIComponent('how it works.jpg')}`;
+const AFTER_DOC_ON_CALL_IMAGE = `${import.meta.env.BASE_URL}images/service-subservices/afterdoconcall.jpg`;
 
 const FAQ_ITEMS = [
   {
@@ -276,7 +276,7 @@ const HomePage = () => {
           <ScrollReveal root={scrollRoot} className="w-full">
             <div className="home-image-panel">
               <img
-                src="/images/service-subservices/Doconcall.jpg"
+                src={`${import.meta.env.BASE_URL}images/service-subservices/Doconcall.jpg`}
                 alt="Doctor on call service"
                 loading="lazy"
                 decoding="async"
@@ -317,7 +317,7 @@ const HomePage = () => {
           <ScrollReveal root={scrollRoot} className="w-full">
             <div className="home-image-panel home-image-panel--mid home-image-panel--cover">
               <img
-                src="/images/service-subservices/Setupcamera.jpg"
+                src={`${import.meta.env.BASE_URL}images/service-subservices/Setupcamera.jpg`}
                 alt="Set up camera support"
                 loading="lazy"
                 decoding="async"

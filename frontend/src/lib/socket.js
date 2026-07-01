@@ -17,7 +17,8 @@ export const connectSocket = (token) => {
   }
 
   socket = io(SOCKET_URL, {
-    path: '/socket.io',
+    // Namespaced under /healthcare so it doesn't collide with other apps sharing this domain.
+    path: import.meta.env.VITE_SOCKET_PATH || '/healthcare/socket.io',
     auth: { token },
     // Polling first is more reliable through the Vite dev proxy on Windows
     transports: ['polling', 'websocket'],

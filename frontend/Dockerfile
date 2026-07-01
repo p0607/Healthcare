@@ -7,9 +7,11 @@ RUN npm ci
 
 COPY . .
 
-# Same-origin API in production (nginx proxies /api → backend)
-ARG VITE_API_URL=/api
+# Same-origin API in production, namespaced under /healthcare (nginx proxies /healthcare/api → backend)
+ARG VITE_API_URL=/healthcare/api
 ENV VITE_API_URL=$VITE_API_URL
+ARG VITE_SOCKET_PATH=/healthcare/socket.io
+ENV VITE_SOCKET_PATH=$VITE_SOCKET_PATH
 
 RUN npm run build
 

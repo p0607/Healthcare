@@ -29,7 +29,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: /api
+        VITE_API_URL: /healthcare/api
+        VITE_SOCKET_PATH: /healthcare/socket.io
     container_name: nursecare-web
     restart: unless-stopped
     depends_on:

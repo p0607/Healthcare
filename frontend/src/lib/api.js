@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-/** Dev: Vite proxies /api → localhost:5050. Override with VITE_API_URL if needed. */
-const baseURL = import.meta.env.VITE_API_URL || '/api';
+/** Namespaced under /healthcare so it doesn't collide with other apps sharing this domain (q9lab.in/lms, /vms, ...). Override with VITE_API_URL if needed. */
+const baseURL = import.meta.env.VITE_API_URL || '/healthcare/api';
 
 export const api = axios.create({
   baseURL,

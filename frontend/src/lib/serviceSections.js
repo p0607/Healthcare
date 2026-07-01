@@ -40,7 +40,7 @@ const SUBSERVICE_IMAGE_FILES = {
 export function subserviceImageSrc(serviceId) {
   const file = SUBSERVICE_IMAGE_FILES[serviceId];
   if (!file) return null;
-  return `/images/service-subservices/${encodeURIComponent(file)}`;
+  return `${import.meta.env.BASE_URL}images/service-subservices/${encodeURIComponent(file)}`;
 }
 
 /** Four care pillars — single source of truth for marketing & navigation. */
@@ -53,7 +53,7 @@ export const SERVICE_SECTIONS = [
     Icon: Sparkles,
     accent:
       'bg-gradient-to-br from-violet-500/20 to-indigo-500/10 border-violet-500/30 text-violet-300',
-    imageSrc: '/images/service-pillars/smart-care.jpg',
+    imageSrc: `${import.meta.env.BASE_URL}images/service-pillars/smart-care.jpg`,
     imageBorderColor: '#c4b5fd',
     services: [
       {
@@ -73,7 +73,7 @@ export const SERVICE_SECTIONS = [
       },
       {
         id: 'carebot-companion',
-        imageSrc: '/images/service-subservices/carebot-companion.jpg',
+        imageSrc: `${import.meta.env.BASE_URL}images/service-subservices/carebot-companion.jpg`,
         laymanName: 'CareBot Companion',
         tagline: 'A helping hand, always by your side',
         legacyName: 'Robotic Assistant',
@@ -96,7 +96,7 @@ export const SERVICE_SECTIONS = [
     Icon: HeartPulse,
     accent:
       'bg-gradient-to-br from-rose-500/20 to-orange-500/10 border-rose-500/30 text-rose-300',
-    imageSrc: '/images/service-pillars/lifeline-care.jpg',
+    imageSrc: `${import.meta.env.BASE_URL}images/service-pillars/lifeline-care.jpg`,
     imageBorderColor: '#fda4af',
     services: [
       {
@@ -132,7 +132,7 @@ export const SERVICE_SECTIONS = [
       },
       {
         id: 'homecoming-care',
-        imageSrc: '/images/service-subservices/homecoming-care.jpg',
+        imageSrc: `${import.meta.env.BASE_URL}images/service-subservices/homecoming-care.jpg`,
         laymanName: 'Homecoming Care',
         tagline: "Healing continues where you're most comfortable — home",
         legacyName: 'Post Hospital Care',
@@ -170,7 +170,7 @@ export const SERVICE_SECTIONS = [
     Icon: Home,
     accent:
       'bg-gradient-to-br from-brand-500/20 to-violet-500/10 border-brand-500/30 text-brand-300',
-    imageSrc: '/images/service-pillars/healing-at-home.jpg',
+    imageSrc: `${import.meta.env.BASE_URL}images/service-pillars/healing-at-home.jpg`,
     imageBorderColor: '#7dd3fc',
     services: [
       {
@@ -261,7 +261,7 @@ export const SERVICE_SECTIONS = [
     Icon: Flower2,
     accent:
       'bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border-emerald-500/30 text-emerald-300',
-    imageSrc: '/images/service-pillars/thrive-well.jpg',
+    imageSrc: `${import.meta.env.BASE_URL}images/service-pillars/thrive-well.jpg`,
     imageBorderColor: '#6ee7b7',
     services: [
       {
