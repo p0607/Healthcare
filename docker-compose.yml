@@ -26,8 +26,8 @@ services:
 
   web:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: frontend/Dockerfile
       args:
         VITE_API_URL: /healthcare/api
         VITE_SOCKET_PATH: /healthcare/socket.io

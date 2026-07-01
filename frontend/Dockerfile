@@ -1,11 +1,14 @@
 # Nurse Care web — Vite build + nginx (proxies /api and /socket.io to backend)
+# Build context is the repo root (see docker-compose.yml) because this depends on the
+# local ../packages/shared workspace package (file:../packages/shared in package.json).
 FROM node:20-alpine AS build
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
+COPY frontend/package.json frontend/package-lock.json* ./
+COPY packages/shared /packages/shared
 RUN npm ci
 
-COPY . .
+COPY frontend/. .
 
 # Same-origin API in production, namespaced under /healthcare (nginx proxies /healthcare/api → backend)
 ARG VITE_API_URL=/healthcare/api
