@@ -1,6 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { audit } = require('../lib/auditLog');
+const { readJsonCached, invalidateJsonCache } = require('../lib/jsonFileCache');
 
 const DATA_FILE = path.join(__dirname, '../../data/bookingCategories.json');
 const MAX_IMAGE_CHARS = 600_000;
@@ -29,8 +30,7 @@ function normalizeImageUrl(value) {
 
 async function readStored() {
   try {
-    const raw = await fs.readFile(DATA_FILE, 'utf8');
-    const parsed = JSON.parse(raw);
+    const parsed = await readJsonCached(DATA_FILE, { onMissing: () => ({ categories: {} }) });
     return parsed?.categories && typeof parsed.categories === 'object' ? parsed.categories : {};
   } catch (err) {
     if (err.code === 'ENOENT') return {};
@@ -41,6 +41,7 @@ async function readStored() {
 async function writeStored(categories) {
   await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
   await fs.writeFile(DATA_FILE, JSON.stringify({ categories }, null, 2));
+  invalidateJsonCache(DATA_FILE);
 }
 
 function buildCategoryList(stored) {

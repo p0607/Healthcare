@@ -4,7 +4,7 @@ const jsonMessage = (message) => ({ message });
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonMessage('Too many login attempts. Try again in 15 minutes.'),
@@ -12,7 +12,7 @@ const authLimiter = rateLimit({
 
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 5,
+  max: 15,
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonMessage('Too many registration attempts. Try again later.'),
@@ -28,7 +28,7 @@ const checkPatientLimiter = rateLimit({
 
 const otpLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 6,
+  max: 12,
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonMessage('Too many OTP requests. Try again in 10 minutes.'),

@@ -12,7 +12,14 @@ function sessionMatches(user, requiredRole) {
 }
 
 const Protected = ({ children, role: requiredRole, activeKind: requiredKind }) => {
-  const { user } = useAuth();
+  const { user, token, sessionReady } = useAuth();
+  if (token && !sessionReady) {
+    return (
+      <div className="app-page max-w-7xl mx-auto px-4 sm:px-6 py-12 text-center text-muted">
+        Loading session…
+      </div>
+    );
+  }
   if (!user) {
     const loginTo = requiredRole === 'admin' ? '/login?staff=1&admin=1' : '/login';
     return <Navigate to={loginTo} replace />;

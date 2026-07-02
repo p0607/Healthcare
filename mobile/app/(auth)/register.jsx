@@ -158,7 +158,7 @@ export default function RegisterScreen() {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <Text style={styles.brand}>Nurse Care</Text>
+            <Text style={styles.brand}>Vytal</Text>
             <Text style={styles.title}>Create account</Text>
             <Text style={styles.subtitle}>Choose your role and fill in your details.</Text>
           </View>

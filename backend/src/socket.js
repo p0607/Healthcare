@@ -1,13 +1,17 @@
 const jwt = require('jsonwebtoken');
 const prisma = require('./lib/prisma');
 const { canAccessRequest } = require('./lib/requestAccess');
+const { PROTECT_USER_SELECT } = require('./lib/authUserSelect');
 
 const socketAuth = async (socket, next) => {
   try {
     const token = socket.handshake.auth?.token;
     if (!token) return next(new Error('No token'));
     const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
-    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: PROTECT_USER_SELECT,
+    });
     if (!user) return next(new Error('User not found'));
     if (!user.accountActive) return next(new Error('Account inactive'));
     socket.user = user;

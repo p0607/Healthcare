@@ -41,7 +41,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { apiErrorMessage } from '../../src/api/client';
 
 import { LOGIN_AS_OPTIONS, LOGIN_KIND_LABELS, navigateForUser } from '../../src/lib/accountKinds';
-
+import ConnectionDiagnostics from '../../src/components/ConnectionDiagnostics';
 import { colors, fontSize, spacing } from '../../src/theme/theme';
 
 
@@ -100,6 +100,11 @@ export default function LoginScreen() {
 
         return;
 
+      }
+
+      if (!result?.role) {
+        setError('Login succeeded but no user profile returned. Check Connection debug below.');
+        return;
       }
 
       finishLogin(result);
@@ -286,6 +291,7 @@ export default function LoginScreen() {
 
           </View>
 
+          <ConnectionDiagnostics />
         </ScrollView>
 
       </KeyboardAvoidingView>

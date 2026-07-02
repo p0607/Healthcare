@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import AdminServiceImageField from '../../components/admin/AdminServiceImageField.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { api } from '../../lib/api';
 import { mergeServiceCategoryCards } from '../../lib/serviceCategoryCards.js';
 
@@ -20,7 +21,10 @@ const fmtInr = (n) =>
 const MAX_IMAGE_BYTES = 450_000;
 
 const AdminVisitOptions = () => {
+  const { user, sessionReady } = useAuth();
   const [careOpts, setCareOpts] = useState([]);
+  const [listLoading, setListLoading] = useState(true);
+  const [listError, setListError] = useState('');
   const [categoryCards, setCategoryCards] = useState(() => mergeServiceCategoryCards());
   const [listTabFilter, setListTabFilter] = useState('nurse_visit');
   const [newCareLabel, setNewCareLabel] = useState('');
@@ -38,19 +42,36 @@ const AdminVisitOptions = () => {
     });
 
   const loadCareOpts = useCallback(async () => {
+    setListLoading(true);
+    setListError('');
     try {
       const { data } = await api.get('/care-services/admin/all', {
         params: listTabFilter === 'all' ? {} : { serviceType: listTabFilter },
       });
       setCareOpts(data.options || []);
-    } catch {
+    } catch (err) {
       setCareOpts([]);
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Could not load visit options. Sign out, then sign in again from Admin login.';
+      setListError(msg);
+      toast.error(msg);
+    } finally {
+      setListLoading(false);
     }
   }, [listTabFilter]);
 
   useEffect(() => {
+    if (!sessionReady) return;
+    if (user?.role !== 'admin') {
+      setListLoading(false);
+      setCareOpts([]);
+      setListError('Admin access required. Sign out, then sign in from Admin login.');
+      return;
+    }
     loadCareOpts();
-  }, [loadCareOpts]);
+  }, [sessionReady, user?.role, loadCareOpts]);
 
   const loadCategoryCards = useCallback(async () => {
     try {
@@ -101,6 +122,10 @@ const AdminVisitOptions = () => {
 
   const addCareOpt = async (e) => {
     e.preventDefault();
+    if (!sessionReady || user?.role !== 'admin') {
+      toast.error('Admin session required. Sign in from Admin login.');
+      return;
+    }
     const t = newCareLabel.trim();
     if (!t) {
       toast.error('Enter a service label');
@@ -119,6 +144,7 @@ const AdminVisitOptions = () => {
       setNewCareDesc('');
       setNewCareImageUrl('');
       setNewCareRate('499');
+      setListTabFilter(newCareServiceType);
       toast.success('Service added');
       loadCareOpts();
     } catch (err) {
@@ -230,6 +256,19 @@ const AdminVisitOptions = () => {
       </div>
 
       <div className="card space-y-4">
+        <p className="text-xs text-muted leading-relaxed">
+          These are the visit-focus add-ons patients pick when booking (e.g. wound dressing, IV fluids).
+          If patients already see options you did not create, they came from the initial database seed — you
+          can edit rates, deactivate, or remove them here once the list loads.
+        </p>
+        {listError ? (
+          <div className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-700 dark:text-rose-200">
+            {listError}{' '}
+            <button type="button" className="font-semibold underline" onClick={() => loadCareOpts()}>
+              Retry
+            </button>
+          </div>
+        ) : null}
         <form
           onSubmit={addCareOpt}
           className="flex flex-row flex-nowrap items-end gap-2 sm:gap-3 -mx-1 px-1 overflow-x-auto pb-0.5"
@@ -321,7 +360,12 @@ const AdminVisitOptions = () => {
           </div>
         )}
         <div className="border-t border-glass-border/60 pt-2 space-y-0 divide-y divide-glass-border/60">
-          {careOpts.length === 0 && (
+          {(!sessionReady || listLoading) && (
+            <p className="text-sm text-muted py-4 text-center">
+              {!sessionReady ? 'Verifying admin session…' : 'Loading visit options…'}
+            </p>
+          )}
+          {sessionReady && !listLoading && !listError && careOpts.length === 0 && (
             <p className="text-sm text-muted py-4">
               No options for this tab yet — change the booking tab above, use &quot;Show for tab&quot;, or add one above.
             </p>

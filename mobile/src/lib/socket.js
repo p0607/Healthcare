@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 import { getToken } from '../storage/session';
-import { getSocketUrl } from './apiConfig';
+import { getSocketPath, getSocketUrl } from './apiConfig';
 
 let socket = null;
 let socketUrlUsed = null;
@@ -11,8 +11,10 @@ export async function connectSocket(explicitToken) {
   if (!token) return null;
 
   const socketUrl = getSocketUrl();
+  const socketPath = getSocketPath();
+  const socketKey = `${socketUrl}|${socketPath}`;
 
-  if (socket && socketUrlUsed !== socketUrl) {
+  if (socket && socketUrlUsed !== socketKey) {
     socket.disconnect();
     socket = null;
   }
@@ -23,9 +25,9 @@ export async function connectSocket(explicitToken) {
     return socket;
   }
 
-  socketUrlUsed = socketUrl;
+  socketUrlUsed = socketKey;
   socket = io(socketUrl, {
-    path: '/socket.io',
+    path: getSocketPath(),
     auth: { token },
     transports: ['polling', 'websocket'],
     reconnectionAttempts: 8,

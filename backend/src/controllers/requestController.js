@@ -12,16 +12,12 @@ const {
   randomOtp,
   saveOtp,
   verifyVisitOtp: verifyVisitOtpCode,
-  getPendingOtpForRequest,
+  getPendingOtpsForRequests,
 } = require('../lib/visitOtp');
 const { audit } = require('../lib/auditLog');
+const { REQUEST_INCLUDE } = require('../lib/authUserSelect');
 
 const getIO = (req) => req.app.get('io');
-
-const REQUEST_INCLUDE = {
-  user: true,
-  nurse: true,
-};
 
 async function resolveBookingPayment(req, totalFee) {
   const {
@@ -210,15 +206,11 @@ exports.myRequests = async (req, res) => {
       include: REQUEST_INCLUDE,
       orderBy: { createdAt: 'desc' },
     });
-    const requests = await Promise.all(
-      rows.map(async (row) => {
-        const request = toRequest(row);
-        return {
-          ...request,
-          pendingOtp: await getPendingOtpForRequest(row.id),
-        };
-      })
-    );
+    const otpByRequest = await getPendingOtpsForRequests(rows.map((row) => row.id));
+    const requests = rows.map((row) => ({
+      ...toRequest(row),
+      pendingOtp: otpByRequest.get(row.id) || null,
+    }));
     return res.json({ requests });
   } catch (err) {
     console.error('myRequests failed:', err);

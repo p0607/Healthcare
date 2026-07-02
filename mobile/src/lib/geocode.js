@@ -5,7 +5,7 @@
 
 const NOMINATIM_HEADERS = {
   Accept: 'application/json',
-  'User-Agent': 'NurseCare-Mobile/1.0',
+  'User-Agent': 'Vytal-Mobile/1.0',
 };
 
 export async function searchPlaces(query) {

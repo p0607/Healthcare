@@ -85,6 +85,7 @@ function buildPayload(items, caregiversByType, checkoutMeta) {
 export function BookingCartProvider({ children }) {
   const { user } = useAuth();
   const userId = cartUserId(user);
+  const cartSyncEnabled = user?.role === 'user';
   const storageKey = cartStorageKey(userId);
   const [hydrated, setHydrated] = useState(false);
 
@@ -129,32 +130,32 @@ export function BookingCartProvider({ children }) {
     (payload) => {
       const normalized = normalizeCartPayload(payload);
       writeStoredCart(storageKey, normalized);
-      if (!userId || !localStorage.getItem('nc_token')) return;
+      if (!cartSyncEnabled || !userId || !localStorage.getItem('nc_token')) return;
       api.put('/cart/me', normalized).catch(() => {});
     },
-    [storageKey, userId]
+    [cartSyncEnabled, storageKey, userId]
   );
 
   const fetchRemoteCart = useCallback(async () => {
-    if (!userId || !localStorage.getItem('nc_token')) return undefined;
+    if (!cartSyncEnabled || !userId || !localStorage.getItem('nc_token')) return undefined;
     try {
       const { data } = await api.get('/cart/me');
       return normalizeCartPayload(data?.cart);
     } catch {
       return undefined;
     }
-  }, [userId]);
+  }, [cartSyncEnabled, userId]);
 
   const persistRemoteCart = useCallback(
     async (payload) => {
-      if (!userId || !localStorage.getItem('nc_token')) return;
+      if (!cartSyncEnabled || !userId || !localStorage.getItem('nc_token')) return;
       try {
         await api.put('/cart/me', payload);
       } catch {
         /* offline */
       }
     },
-    [userId]
+    [cartSyncEnabled, userId]
   );
 
   useEffect(() => {

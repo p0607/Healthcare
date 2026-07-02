@@ -37,7 +37,7 @@ export function AuthProvider({ children }) {
       if (cancelled) return;
       if (savedToken) setToken(savedToken);
       if (savedUser) setUser(savedUser);
-      setHydrating(false);
+      if (!savedToken) setHydrating(false);
     })();
     return () => {
       cancelled = true;
@@ -66,7 +66,10 @@ export function AuthProvider({ children }) {
 
   // 3. Whenever we have a token, refresh the user profile from the server.
   useEffect(() => {
-    if (!token) return undefined;
+    if (!token) {
+      setHydrating(false);
+      return undefined;
+    }
     let cancelled = false;
     (async () => {
       try {
@@ -82,6 +85,8 @@ export function AuthProvider({ children }) {
           setToken(null);
           setUser(null);
         }
+      } finally {
+        if (!cancelled) setHydrating(false);
       }
     })();
     return () => {

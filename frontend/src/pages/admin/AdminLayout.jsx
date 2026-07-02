@@ -12,9 +12,17 @@ const tabClass = ({ isActive }) =>
   );
 
 const AdminLayout = () => {
-  const { user } = useAuth();
+  const { user, sessionReady } = useAuth();
   const tierLabel = ADMIN_TIER_LABELS[user?.adminTier] || 'Admin';
   const superAdmin = isSuperAdminUser(user);
+
+  if (!sessionReady) {
+    return (
+      <div className="app-page max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center text-muted">
+        Verifying admin session…
+      </div>
+    );
+  }
 
   return (
     <div className="app-page max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 animate-fade-in">

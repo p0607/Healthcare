@@ -3,7 +3,7 @@ const { protect, authorize, requireAdmin, requirePermission } = require('../midd
 const { publicApiLimiter } = require('../middleware/rateLimit');
 const c = require('../controllers/nurseController');
 
-router.get('/', c.listNurses);
+router.get('/', publicApiLimiter, c.listNurses);
 router.get('/available', publicApiLimiter, c.listAvailableAt);
 router.put('/me', protect, authorize('nurse'), c.updateMe);
 router.patch('/me/settings', protect, authorize('nurse'), c.updateSettings);

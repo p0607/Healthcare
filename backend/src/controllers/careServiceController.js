@@ -69,41 +69,49 @@ exports.listPublic = async (req, res) => {
 };
 
 exports.listAdmin = async (req, res) => {
-  const st = req.query.serviceType;
-  const where = {};
-  if (st && SERVICE_TYPES.has(String(st))) where.serviceType = String(st);
-  const options = await prisma.careServiceOption.findMany({
-    where,
-    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-  });
-  res.json({ options });
+  try {
+    const st = req.query.serviceType;
+    const where = {};
+    if (st && SERVICE_TYPES.has(String(st))) where.serviceType = String(st);
+    const options = await prisma.careServiceOption.findMany({
+      where,
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    });
+    res.json({ options });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Could not load visit options' });
+  }
 };
 
 exports.create = async (req, res) => {
-  const { label, description, imageUrl, sortOrder, serviceType, rate } = req.body;
-  const trimmed = (label || '').trim();
-  if (!trimmed) return res.status(400).json({ message: 'Label is required' });
+  try {
+    const { label, description, imageUrl, sortOrder, serviceType, rate } = req.body;
+    const trimmed = (label || '').trim();
+    if (!trimmed) return res.status(400).json({ message: 'Label is required' });
 
-  const st = serviceType != null && SERVICE_TYPES.has(String(serviceType)) ? String(serviceType) : 'nurse_visit';
-  const r = Math.max(0, Math.round(Number(rate)) || 0);
+    const st = serviceType != null && SERVICE_TYPES.has(String(serviceType)) ? String(serviceType) : 'nurse_visit';
+    const r = Math.max(0, Math.round(Number(rate)) || 0);
 
-  const option = await prisma.careServiceOption.create({
-    data: {
-      label: trimmed,
-      description: description?.trim() || null,
-      imageUrl: imageUrl === null || imageUrl === '' ? null : String(imageUrl).trim(),
-      serviceType: st,
-      rate: r,
-      sortOrder: Number.isFinite(Number(sortOrder)) ? Number(sortOrder) : 0,
-    },
-  });
-  audit(req, {
-    action: 'catalog.care_service.created',
-    entityType: 'CareServiceOption',
-    entityId: option.id,
-    metadata: { label: trimmed, serviceType: st, rate: r },
-  });
-  res.status(201).json({ option });
+    const option = await prisma.careServiceOption.create({
+      data: {
+        label: trimmed,
+        description: description?.trim() || null,
+        imageUrl: imageUrl === null || imageUrl === '' ? null : String(imageUrl).trim(),
+        serviceType: st,
+        rate: r,
+        sortOrder: Number.isFinite(Number(sortOrder)) ? Number(sortOrder) : 0,
+      },
+    });
+    audit(req, {
+      action: 'catalog.care_service.created',
+      entityType: 'CareServiceOption',
+      entityId: option.id,
+      metadata: { label: trimmed, serviceType: st, rate: r },
+    });
+    res.status(201).json({ option });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Could not create visit option' });
+  }
 };
 
 exports.update = async (req, res) => {

@@ -2,6 +2,7 @@ const fs = require('fs/promises');
 const path = require('path');
 const prisma = require('../lib/prisma');
 const { audit } = require('../lib/auditLog');
+const { readJsonCached, invalidateJsonCache } = require('../lib/jsonFileCache');
 
 const DATA_FILE = path.join(__dirname, '../../data/marketingServices.json');
 
@@ -42,8 +43,9 @@ const inferServiceType = (...parts) => {
 
 async function readCatalogData() {
   try {
-    const raw = await fs.readFile(DATA_FILE, 'utf8');
-    const parsed = JSON.parse(raw);
+    const parsed = await readJsonCached(DATA_FILE, {
+      onMissing: () => ({ sections: [], ...emptyCatalogExtras() }),
+    });
     const extras = emptyCatalogExtras();
     return {
       sections: Array.isArray(parsed?.sections) ? parsed.sections : [],
@@ -89,6 +91,7 @@ async function writeCatalog(sections) {
       2
     )
   );
+  invalidateJsonCache(DATA_FILE);
 }
 
 async function writeCatalogData(data) {
@@ -119,6 +122,7 @@ async function writeCatalogData(data) {
       2
     )
   );
+  invalidateJsonCache(DATA_FILE);
 }
 
 async function syncCareOption(serviceName, service) {

@@ -14,6 +14,7 @@ import AdminScreenHeader from '../../src/components/AdminScreenHeader';
 import Button from '../../src/components/Button';
 import SelectField from '../../src/components/SelectField';
 import TextField from '../../src/components/TextField';
+import { useAuth } from '../../src/context/AuthContext';
 import { api, apiErrorMessage } from '../../src/api/client';
 import { fmtInr, serviceLabel } from '../../src/lib/adminFormat';
 import { colors, fontSize, radius, spacing } from '../../src/theme/theme';
@@ -31,19 +32,23 @@ const BOOKING_TAB_OPTIONS = TAB_OPTIONS.filter((t) => t.id !== 'all');
 const newDraftRow = () => ({ label: '', description: '', rate: '499' });
 
 export default function AdminVisitOptionsScreen() {
+  const { user, hydrating } = useAuth();
   const [listTabFilter, setListTabFilter] = useState('nurse_visit');
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [serviceType, setServiceType] = useState('nurse_visit');
   const [draftRows, setDraftRows] = useState([newDraftRow()]);
 
   const load = useCallback(async () => {
+    if (hydrating || user?.role !== 'admin') return;
     const params = listTabFilter === 'all' ? {} : { serviceType: listTabFilter };
     const { data } = await api.get('/care-services/admin/all', { params });
     setOptions(data.options || []);
-  }, [listTabFilter]);
+    setLoadError('');
+  }, [hydrating, user?.role, listTabFilter]);
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
@@ -57,17 +62,27 @@ export default function AdminVisitOptionsScreen() {
   }, [load]);
 
   useEffect(() => {
+    if (hydrating) return;
+    if (user?.role !== 'admin') {
+      setLoading(false);
+      setOptions([]);
+      setLoadError('Admin access required. Sign in from Admin login.');
+      return;
+    }
     (async () => {
       setLoading(true);
       try {
         await load();
       } catch (err) {
-        Alert.alert('Error', apiErrorMessage(err));
+        const msg = apiErrorMessage(err);
+        setLoadError(msg);
+        setOptions([]);
+        Alert.alert('Could not load visit options', msg);
       } finally {
         setLoading(false);
       }
     })();
-  }, [load]);
+  }, [hydrating, user?.role, load]);
 
   const updateDraft = (index, patch) => {
     setDraftRows((rows) => rows.map((row, idx) => (idx === index ? { ...row, ...patch } : row)));
@@ -80,6 +95,10 @@ export default function AdminVisitOptionsScreen() {
   };
 
   const addOptions = async () => {
+    if (hydrating || user?.role !== 'admin') {
+      Alert.alert('Admin required', 'Sign in from Admin login to manage visit options.');
+      return;
+    }
     const cleaned = draftRows
       .map((row) => ({
         label: row.label.trim(),
@@ -212,6 +231,7 @@ export default function AdminVisitOptionsScreen() {
         <Text style={styles.sectionTitle}>
           All options ({options.length})
         </Text>
+        {loadError ? <Text style={styles.errorText}>{loadError}</Text> : null}
         {loading ? (
           <ActivityIndicator color={colors.brand} />
         ) : options.length === 0 ? (
@@ -273,6 +293,7 @@ const styles = StyleSheet.create({
   draftLabel: { fontSize: fontSize.xs, fontWeight: '800', color: colors.muted, textTransform: 'uppercase' },
   removeText: { color: colors.danger, fontWeight: '700', fontSize: fontSize.sm },
   sectionTitle: { fontSize: fontSize.md, fontWeight: '800', color: colors.text },
+  errorText: { color: colors.danger, fontSize: fontSize.sm, lineHeight: 18 },
   empty: { color: colors.muted, textAlign: 'center' },
   card: {
     backgroundColor: colors.surface,

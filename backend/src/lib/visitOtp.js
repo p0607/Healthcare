@@ -90,26 +90,41 @@ async function incrementOtpAttempts({ requestId, purpose }) {
 
 /** Pending OTP metadata for patient UI — never returns the code (hash-only storage). */
 async function getPendingOtpForRequest(requestId) {
+  const map = await getPendingOtpsForRequests([requestId]);
+  return map.get(requestId) || null;
+}
+
+/** Batch pending OTP lookup for request lists (avoids N+1 queries). */
+async function getPendingOtpsForRequests(requestIds) {
+  const ids = [...new Set((requestIds || []).filter(Boolean))];
+  const result = new Map();
+  if (ids.length === 0) return result;
+
   try {
     const rows = await prisma.visitOtp.findMany({
       where: {
-        requestId,
+        requestId: { in: ids },
         expiresAt: { gt: new Date() },
         attempts: { lt: MAX_OTP_ATTEMPTS },
       },
     });
-    if (rows.length === 0) return null;
-    rows.sort((a, b) => purposeRank(b.purpose) - purposeRank(a.purpose));
-    const current = rows[0];
-    return {
-      purpose: current.purpose,
-      expiresAt: current.expiresAt.getTime(),
-      active: true,
-    };
+
+    for (const row of rows) {
+      const meta = {
+        purpose: row.purpose,
+        expiresAt: row.expiresAt.getTime(),
+        active: true,
+      };
+      const existing = result.get(row.requestId);
+      if (!existing || purposeRank(row.purpose) > purposeRank(existing.purpose)) {
+        result.set(row.requestId, meta);
+      }
+    }
   } catch (err) {
-    console.warn('getPendingOtpForRequest failed:', err.message);
-    return null;
+    console.warn('getPendingOtpsForRequests failed:', err.message);
   }
+
+  return result;
 }
 
 module.exports = {
@@ -123,4 +138,5 @@ module.exports = {
   clearOtp,
   incrementOtpAttempts,
   getPendingOtpForRequest,
+  getPendingOtpsForRequests,
 };

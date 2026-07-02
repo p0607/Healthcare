@@ -114,9 +114,9 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={styles.brandRow}>
           <View style={styles.logoBadge}>
-            <Text style={styles.logoText}>911</Text>
+            <Text style={styles.logoText}>V</Text>
           </View>
-          <Text style={styles.brandName}>911</Text>
+          <Text style={styles.brandName}>Vytal</Text>
         </View>
         <View style={styles.headerRight}>
           <Pressable style={styles.profileRingBtn} onPress={() => router.push('/(app)/profile')}>

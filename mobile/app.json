@@ -1,15 +1,17 @@
 {
   "expo": {
-    "name": "Nurse Care",
+    "name": "Vytal",
     "slug": "healthcare",
     "scheme": "nursecare",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "icon": "./assets/icon.png",
     "splash": {
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0a9bf0"
+      "backgroundColor": "#061633"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
@@ -23,7 +25,8 @@
       "package": "com.nursecare.app",
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
-        "backgroundColor": "#0a9bf0"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#061633"
       },
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
@@ -45,7 +48,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Nurse Care to use your location for home visit addresses."
+          "locationWhenInUsePermission": "Allow Vytal to use your location for home visit addresses."
         }
       ]
     ],

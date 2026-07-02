@@ -80,9 +80,9 @@ export default function LandingScreen() {
       <View style={styles.topBar}>
         <View style={styles.brandRow}>
           <View style={styles.logoBadge}>
-            <Text style={styles.logoText}>911</Text>
+            <Text style={styles.logoText}>V</Text>
           </View>
-          <Text style={styles.brandName}>911</Text>
+          <Text style={styles.brandName}>Vytal</Text>
         </View>
         <Pressable onPress={goPrimary} hitSlop={8}>
           <Text style={styles.signIn}>Sign in</Text>
@@ -148,7 +148,7 @@ export default function LandingScreen() {
         </View>
 
         {/* Why families choose us */}
-        <Text style={styles.sectionTitle}>Why families choose 911</Text>
+        <Text style={styles.sectionTitle}>Why families choose Vytal</Text>
         <View style={styles.featureGrid}>
           {FEATURES.map((f) => (
             <View key={f.title} style={styles.featureCard}>

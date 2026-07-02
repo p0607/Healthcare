@@ -32,7 +32,7 @@ export function openNativeRazorpayCheckout({ keyId, orderId, amount, currency, u
     order_id: orderId,
     amount,
     currency: currency || 'INR',
-    name: 'Nurse Care',
+    name: 'Vytal',
     description: description || 'Home care booking',
     prefill: {
       name: user?.name || '',

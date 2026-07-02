@@ -27,6 +27,8 @@ export const AuthProvider = ({ children }) => {
   });
   const [token, setToken] = useState(() => localStorage.getItem('nc_token'));
   const [loading, setLoading] = useState(false);
+  /** False until /auth/me finishes when a token exists — admin pages must wait for this. */
+  const [sessionReady, setSessionReady] = useState(() => !localStorage.getItem('nc_token'));
 
   useEffect(() => {
     if (token) {
@@ -61,7 +63,12 @@ export const AuthProvider = ({ children }) => {
   }, [token, user]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setSessionReady(true);
+      return undefined;
+    }
+
+    setSessionReady(false);
     let cancelled = false;
     (async () => {
       try {
@@ -71,6 +78,8 @@ export const AuthProvider = ({ children }) => {
         setUser(data.user);
       } catch {
         /* keep cached user if refresh fails */
+      } finally {
+        if (!cancelled) setSessionReady(true);
       }
     })();
     return () => {
@@ -83,6 +92,7 @@ export const AuthProvider = ({ children }) => {
     persistUser(data.user);
     setToken(data.token);
     setUser(data.user);
+    setSessionReady(true);
     return data.user;
   };
 
@@ -156,6 +166,7 @@ export const AuthProvider = ({ children }) => {
     disconnectSocket();
     setToken(null);
     setUser(null);
+    setSessionReady(true);
   };
 
   const value = useMemo(
@@ -163,6 +174,7 @@ export const AuthProvider = ({ children }) => {
       user,
       token,
       loading,
+      sessionReady,
       login,
       completeLogin,
       switchActiveKind,
@@ -170,7 +182,7 @@ export const AuthProvider = ({ children }) => {
       logout,
       setUser,
     }),
-    [user, token, loading]
+    [user, token, loading, sessionReady]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

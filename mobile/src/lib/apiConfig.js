@@ -178,8 +178,44 @@ export function getApiBaseUrl() {
   return adjustDevUrl(configuredApiUrl(), { ensureApiPath: true });
 }
 
+/** Socket.IO server origin (host only). Path is separate — see getSocketPath(). */
 export function getSocketUrl() {
-  return adjustDevUrl(configuredSocketUrl(), { ensureApiPath: false });
+  const explicit = configuredSocketUrl();
+  if (explicit) {
+    try {
+      const parsed = new URL(adjustDevUrl(explicit, { ensureApiPath: false }));
+      if (parsed.pathname && parsed.pathname !== '/') {
+        return `${parsed.protocol}//${parsed.host}`;
+      }
+      return parsed.origin;
+    } catch {
+      /* fall through */
+    }
+  }
+
+  try {
+    const api = new URL(configuredApiUrl());
+    return api.origin;
+  } catch {
+    return adjustDevUrl(DEFAULT_SOCKET, { ensureApiPath: false });
+  }
+}
+
+/** Socket.IO path — must match nginx (e.g. /healthcare/socket.io on q9lab.in). */
+export function getSocketPath() {
+  const fromEnv =
+    process.env.EXPO_PUBLIC_SOCKET_PATH || Constants.expoConfig?.extra?.socketPath;
+  if (fromEnv) return fromEnv;
+
+  try {
+    const api = new URL(configuredApiUrl());
+    const prefix = api.pathname.replace(/\/api\/?$/, '');
+    if (prefix && prefix !== '/') return `${prefix}/socket.io`;
+  } catch {
+    /* ignore */
+  }
+
+  return '/socket.io';
 }
 
 export function getApiConfigDebugInfo() {
@@ -190,6 +226,8 @@ export function getApiConfigDebugInfo() {
     configuredSocket: configuredSocketUrl(),
     resolvedApi: getApiBaseUrl(),
     resolvedSocket: getSocketUrl(),
+    resolvedSocketPath: getSocketPath(),
+    buildProfile: Constants.expoConfig?.extra?.buildProfile || null,
     metroHost,
     platform: Platform.OS,
     isDevice: Constants.isDevice,

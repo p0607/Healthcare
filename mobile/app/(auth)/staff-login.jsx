@@ -19,6 +19,7 @@ import TextField from '../../src/components/TextField';
 import { useAuth } from '../../src/context/AuthContext';
 import { apiErrorMessage } from '../../src/api/client';
 import { LOGIN_KIND_LABELS, STAFF_LOGIN_ROLES, navigateForUser } from '../../src/lib/accountKinds';
+import ConnectionDiagnostics from '../../src/components/ConnectionDiagnostics';
 import { colors, fontSize, radius, spacing } from '../../src/theme/theme';
 
 export default function StaffLoginScreen() {
@@ -177,6 +178,7 @@ export default function StaffLoginScreen() {
           <Text style={styles.demoHint}>
             Demo: admin@alchemy.com / admin123 · priya@nurse.com / nurse123
           </Text>
+          <ConnectionDiagnostics />
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>

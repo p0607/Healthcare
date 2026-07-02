@@ -11,8 +11,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://10.0.2.2:5050/api",
-        "EXPO_PUBLIC_SOCKET_URL": "http://10.0.2.2:5050"
+        "EXPO_PUBLIC_API_URL": "https://q9lab.in/healthcare/api",
+        "EXPO_PUBLIC_SOCKET_URL": "https://q9lab.in"
       }
     },
     "preview": {
@@ -21,8 +21,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://YOUR-DOMAIN.com/api",
-        "EXPO_PUBLIC_SOCKET_URL": "https://YOUR-DOMAIN.com"
+        "EXPO_PUBLIC_API_URL": "https://q9lab.in/healthcare/api",
+        "EXPO_PUBLIC_SOCKET_URL": "https://q9lab.in"
       }
     },
     "staging": {
@@ -31,16 +31,16 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://YOUR-STAGING-DOMAIN.com/api",
-        "EXPO_PUBLIC_SOCKET_URL": "https://YOUR-STAGING-DOMAIN.com"
+        "EXPO_PUBLIC_API_URL": "https://q9lab.in/healthcare/api",
+        "EXPO_PUBLIC_SOCKET_URL": "https://q9lab.in"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
         "APP_VARIANT": "production",
-        "EXPO_PUBLIC_API_URL": "https://YOUR-DOMAIN.com/api",
-        "EXPO_PUBLIC_SOCKET_URL": "https://YOUR-DOMAIN.com"
+        "EXPO_PUBLIC_API_URL": "https://q9lab.in/healthcare/api",
+        "EXPO_PUBLIC_SOCKET_URL": "https://q9lab.in"
       }
     }
   },
