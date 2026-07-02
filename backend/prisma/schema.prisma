@@ -205,6 +205,8 @@ model ServiceRequest {
 
   /// Amount charged for this booking (INR), set when patient pays
   feeAmount   Int?
+  /// `online` (Razorpay) or `cod` (cash collected on visit)
+  paymentMethod String   @default("online")
   paidAt      DateTime?
   razorpayOrderId   String?
   razorpayPaymentId String? @unique

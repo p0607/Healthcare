@@ -39,6 +39,7 @@ export default function PaymentScreen() {
   const checkout = paymentCheckout;
 
   const [method, setMethod] = useState('card');
+  const [paymentChannel, setPaymentChannel] = useState('online');
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
@@ -49,6 +50,7 @@ export default function PaymentScreen() {
   const [feeAmount, setFeeAmount] = useState(0);
   const [lineItems, setLineItems] = useState([]);
   const [razorpayEnabled, setRazorpayEnabled] = useState(false);
+  const [codEnabled, setCodEnabled] = useState(true);
 
   const nurse = checkout?.nurse;
   const nurseId = caregiverRecordId(nurse);
@@ -89,7 +91,10 @@ export default function PaymentScreen() {
     (async () => {
       try {
         const config = await fetchRazorpayConfig();
-        if (!cancelled) setRazorpayEnabled(Boolean(config.enabled));
+        if (!cancelled) {
+          setRazorpayEnabled(Boolean(config.enabled));
+          setCodEnabled(config.codEnabled !== false);
+        }
       } catch {
         if (!cancelled) setRazorpayEnabled(false);
       }
@@ -134,18 +139,26 @@ export default function PaymentScreen() {
   const cardDigits = cardNumber.replace(/\D/g, '');
   const cardExpiryDigits = cardExpiry.replace(/\D/g, '');
 
+  const isCod = paymentChannel === 'cod';
+
   const payDisabled =
     submitting ||
     quoteLoading ||
     displayAmount <= 0 ||
-    (razorpayEnabled && !isNativeRazorpayAvailable()) ||
-    (!razorpayEnabled &&
+    (!isCod &&
+      razorpayEnabled &&
+      !isNativeRazorpayAvailable()) ||
+    (!isCod &&
+      !razorpayEnabled &&
       method === 'card' &&
       (cardDigits.length < 12 ||
         cardExpiryDigits.length < 4 ||
         cardCvv.trim().length < 3 ||
         !cardName.trim())) ||
-    (!razorpayEnabled && method === 'upi' && !/^[\w.-]+@[\w]+$/.test(upiId.trim()));
+    (!isCod &&
+      !razorpayEnabled &&
+      method === 'upi' &&
+      !/^[\w.-]+@[\w]+$/.test(upiId.trim()));
 
   const completeBooking = async (paymentPayload) => {
     await api.post('/requests', {
@@ -160,8 +173,10 @@ export default function PaymentScreen() {
     await clearCart();
     setPaymentCheckout(null);
     Alert.alert(
-      'Booking confirmed',
-      `Paid ${fmtInr(displayAmount)} · Booked with ${nurse.name}`,
+      paymentPayload.paymentMethod === 'cod' ? 'Booking confirmed' : 'Booking confirmed',
+      paymentPayload.paymentMethod === 'cod'
+        ? `Cash on delivery · Pay ${fmtInr(displayAmount)} to ${nurse.name} on visit`
+        : `Paid ${fmtInr(displayAmount)} · Booked with ${nurse.name}`,
       [{ text: 'View bookings', onPress: () => router.replace('/(app)/bookings') }]
     );
   };
@@ -170,6 +185,11 @@ export default function PaymentScreen() {
     if (!nurseId || !isValidPin(pin)) return;
     setSubmitting(true);
     try {
+      if (isCod) {
+        await completeBooking({ paymentMethod: 'cod' });
+        return;
+      }
+
       if (razorpayEnabled) {
         if (!isNativeRazorpayAvailable()) {
           Alert.alert(
@@ -271,7 +291,35 @@ export default function PaymentScreen() {
           </View>
         </View>
 
-        {razorpayEnabled ? (
+        {codEnabled ? (
+          <View style={styles.channelRow}>
+            <Pressable
+              style={[styles.channelBtn, paymentChannel === 'online' && styles.channelActive]}
+              onPress={() => setPaymentChannel('online')}
+            >
+              <Text style={[styles.channelText, paymentChannel === 'online' && styles.channelTextActive]}>
+                Pay online
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.channelBtn, paymentChannel === 'cod' && styles.channelCodActive]}
+              onPress={() => setPaymentChannel('cod')}
+            >
+              <Text style={[styles.channelText, paymentChannel === 'cod' && styles.channelCodTextActive]}>
+                Cash on delivery
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {isCod ? (
+          <View style={styles.codBox}>
+            <Text style={styles.codTitle}>Pay when the caregiver arrives</Text>
+            <Text style={styles.codHint}>
+              Keep {fmtInr(displayAmount)} ready in cash. Payment is recorded when the visit is completed.
+            </Text>
+          </View>
+        ) : razorpayEnabled ? (
           <Text style={styles.netHint}>
             Pay with UPI, cards, or netbanking via Razorpay. Requires the installed app build (not Expo Go).
           </Text>
@@ -360,7 +408,13 @@ export default function PaymentScreen() {
           disabled={payDisabled}
         >
           <Ionicons name="lock-closed" size={16} color={colors.white} />
-          <Text style={styles.payText}>{submitting ? 'Processing…' : `Pay ${fmtInr(displayAmount)}`}</Text>
+          <Text style={styles.payText}>
+            {submitting
+              ? 'Processing…'
+              : isCod
+                ? `Confirm booking · ${fmtInr(displayAmount)} COD`
+                : `Pay ${fmtInr(displayAmount)}`}
+          </Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
@@ -439,6 +493,31 @@ const styles = StyleSheet.create({
   totalLabel: { fontSize: fontSize.md, fontWeight: '600', color: colors.text },
   totalValue: { fontSize: fontSize.xl, fontWeight: '800', color: colors.text },
   methodRow: { flexDirection: 'row', gap: spacing.sm },
+  channelRow: { flexDirection: 'row', gap: spacing.sm },
+  channelBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+  },
+  channelActive: { borderColor: colors.brand, backgroundColor: colors.brandSoft },
+  channelCodActive: { borderColor: '#059669', backgroundColor: '#ecfdf5' },
+  channelText: { fontSize: fontSize.xs, fontWeight: '700', color: colors.muted },
+  channelTextActive: { color: colors.brand },
+  channelCodTextActive: { color: '#047857' },
+  codBox: {
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.xs,
+  },
+  codTitle: { fontSize: fontSize.md, fontWeight: '800', color: '#065f46' },
+  codHint: { fontSize: fontSize.sm, color: '#047857', lineHeight: 20 },
   methodBtn: {
     flex: 1,
     alignItems: 'center',

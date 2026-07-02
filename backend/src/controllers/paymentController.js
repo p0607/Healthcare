@@ -9,6 +9,7 @@ const {
 exports.getRazorpayConfig = (_req, res) => {
   res.json({
     enabled: isRazorpayConfigured(),
+    codEnabled: process.env.ALLOW_COD !== '0',
     keyId: isRazorpayConfigured() ? getPublicKeyId() : null,
     currency: 'INR',
   });

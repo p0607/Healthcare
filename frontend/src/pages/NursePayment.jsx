@@ -19,6 +19,7 @@ const fmtInr = (n) =>
   );
 const paymentStatusLabel = (s) => {
   if (s === 'paid_out') return { text: 'Paid to you', cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' };
+  if (s === 'cod_pending') return { text: 'COD · collect on visit', cls: 'bg-amber-500/15 text-amber-300 border-amber-500/30' };
   if (s === 'pending_settlement') return { text: 'Pending', cls: 'bg-amber-500/15 text-amber-300 border-amber-500/30' };
   if (s === 'refunded') return { text: 'Refunded', cls: 'bg-glass/40 text-muted border-glass-border/60' };
   return { text: s, cls: 'bg-glass/40 text-muted' };

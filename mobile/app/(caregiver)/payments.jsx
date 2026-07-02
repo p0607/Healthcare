@@ -24,6 +24,7 @@ const fmtInr = (n) =>
 
 const paymentStatusLabel = (status) => {
   if (status === 'paid_out') return { text: 'Paid to you', color: colors.success, bg: '#d1fae5' };
+  if (status === 'cod_pending') return { text: 'COD · collect on visit', color: '#b45309', bg: '#fef3c7' };
   if (status === 'pending_settlement') return { text: 'Pending', color: '#d97706', bg: '#fef3c7' };
   if (status === 'refunded') return { text: 'Refunded', color: colors.muted, bg: '#f1f5f9' };
   return { text: status, color: colors.muted, bg: '#f1f5f9' };

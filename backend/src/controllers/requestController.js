@@ -21,11 +21,26 @@ const getIO = (req) => req.app.get('io');
 
 async function resolveBookingPayment(req, totalFee) {
   const {
+    paymentMethod,
     razorpayOrderId,
     razorpayPaymentId,
     razorpaySignature,
     paymentConfirmed,
   } = req.body;
+
+  if (paymentMethod === 'cod') {
+    if (process.env.ALLOW_COD === '0') {
+      const err = new Error('Cash on delivery is not available');
+      err.status = 400;
+      throw err;
+    }
+    return {
+      paymentMethod: 'cod',
+      razorpayOrderId: null,
+      razorpayPaymentId: null,
+      paidAt: null,
+    };
+  }
 
   if (isRazorpayConfigured()) {
     if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
@@ -53,14 +68,16 @@ async function resolveBookingPayment(req, totalFee) {
     });
 
     return {
+      paymentMethod: 'online',
       razorpayOrderId,
       razorpayPaymentId,
+      paidAt: new Date(),
     };
   }
 
   if (process.env.NODE_ENV === 'production') {
-    const err = new Error('Payment gateway is not configured');
-    err.status = 503;
+    const err = new Error('Select Cash on Delivery or complete online payment');
+    err.status = 402;
     throw err;
   }
 
@@ -71,8 +88,10 @@ async function resolveBookingPayment(req, totalFee) {
   }
 
   return {
+    paymentMethod: 'online',
     razorpayOrderId: null,
     razorpayPaymentId: null,
+    paidAt: new Date(),
   };
 }
 
@@ -164,7 +183,8 @@ exports.createRequest = async (req, res) => {
         address: location.address,
         status: 'pending',
         feeAmount: totalFee,
-        paidAt: new Date(),
+        paymentMethod: paymentMeta.paymentMethod || 'online',
+        paidAt: paymentMeta.paidAt ?? null,
         razorpayOrderId: paymentMeta.razorpayOrderId,
         razorpayPaymentId: paymentMeta.razorpayPaymentId,
       },
@@ -187,7 +207,8 @@ exports.createRequest = async (req, res) => {
         serviceType,
         nurseId: nurse.id,
         feeAmount: totalFee,
-        paid: true,
+        paid: Boolean(paymentMeta.paidAt),
+        paymentMethod: paymentMeta.paymentMethod || 'online',
         razorpayPaymentId: paymentMeta.razorpayPaymentId,
       },
     });
@@ -512,13 +533,22 @@ exports.verifyVisitOtp = async (req, res) => {
     });
   }
 
+  const updateData = {
+    status: meta.nextStatus,
+    startedAt: meta.nextStatus === 'in_progress' ? new Date() : existing.startedAt,
+    completedAt: meta.nextStatus === 'completed' ? new Date() : existing.completedAt,
+  };
+  if (
+    meta.nextStatus === 'completed' &&
+    existing.paymentMethod === 'cod' &&
+    !existing.paidAt
+  ) {
+    updateData.paidAt = new Date();
+  }
+
   const updated = await prisma.serviceRequest.update({
     where: { id: existing.id },
-    data: {
-      status: meta.nextStatus,
-      startedAt: meta.nextStatus === 'in_progress' ? new Date() : existing.startedAt,
-      completedAt: meta.nextStatus === 'completed' ? new Date() : existing.completedAt,
-    },
+    data: updateData,
     include: REQUEST_INCLUDE,
   });
   const request = toRequest(updated);

@@ -164,6 +164,10 @@ export default function BookingsScreen() {
         renderItem={({ item }) => {
           const meta = STATUS_META[item.status] || STATUS_META.pending;
           const fee = formatMoney(item.feeAmount);
+          const feeLabel =
+            item.paymentMethod === 'cod' && !item.paidAt && item.status !== 'cancelled'
+              ? `${fee} · pay on visit`
+              : fee;
           return (
             <View style={styles.card}>
               <View style={styles.cardTop}>
@@ -189,7 +193,7 @@ export default function BookingsScreen() {
               </Text>
 
               <View style={styles.cardBottom}>
-                {fee ? <Text style={styles.fee}>{fee}</Text> : <View />}
+                {feeLabel ? <Text style={styles.fee}>{feeLabel}</Text> : <View />}
                 <View style={styles.actions}>
                   {TRACKABLE.includes(item.status) && item.nurse ? (
                     <Pressable

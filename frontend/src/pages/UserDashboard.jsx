@@ -97,6 +97,19 @@ const fmtInr = (n) =>
     Number(n || 0)
   );
 
+const bookingPaymentLabel = (request) => {
+  if (request?.feeAmount == null) return null;
+  if (
+    request.paymentMethod === 'cod' &&
+    !request.paidAt &&
+    request.status !== 'cancelled'
+  ) {
+    return `Pay ${fmtInr(request.feeAmount)} on visit (COD)`;
+  }
+  if (request.paidAt) return `Paid ${fmtInr(request.feeAmount)}`;
+  return fmtInr(request.feeAmount);
+};
+
 const servicePurposeLabel = (request) => request?.serviceType?.replace(/_/g, ' ') || 'Service visit';
 
 const visitDurationLabel = (request) => {
@@ -1735,9 +1748,9 @@ const UserDashboard = () => {
                             <div className="text-sm font-semibold capitalize text-foreground">
                               Purpose: {servicePurposeLabel(r)}
                             </div>
-                            {r.feeAmount != null && (
+                            {bookingPaymentLabel(r) && (
                               <div className="mt-1 text-[11px] text-emerald-300 font-semibold">
-                                Paid {fmtInr(r.feeAmount)} (demo)
+                                {bookingPaymentLabel(r)}
                               </div>
                             )}
                             {duration && (
@@ -1942,9 +1955,9 @@ const UserDashboard = () => {
             <div className="px-4 sm:px-5 py-4 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge status={selectedRequest.status} />
-                {selectedRequest.feeAmount != null && (
+                {bookingPaymentLabel(selectedRequest) && (
                   <span className="text-xs text-emerald-300 font-semibold">
-                    Paid {fmtInr(selectedRequest.feeAmount)} (demo)
+                    {bookingPaymentLabel(selectedRequest)}
                   </span>
                 )}
                 {visitDurationLabel(selectedRequest) && (

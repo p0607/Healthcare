@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Building2,
+  Banknote,
   CreditCard,
   Lock,
   ShieldCheck,
@@ -36,6 +37,7 @@ const PaymentCheckout = () => {
   const checkout = location.state?.checkout;
 
   const [method, setMethod] = useState('card');
+  const [paymentChannel, setPaymentChannel] = useState('online');
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
@@ -46,6 +48,7 @@ const PaymentCheckout = () => {
   const [feeAmount, setFeeAmount] = useState(0);
   const [lineItems, setLineItems] = useState([]);
   const [razorpayEnabled, setRazorpayEnabled] = useState(false);
+  const [codEnabled, setCodEnabled] = useState(true);
 
   const nurse = checkout?.nurse;
   const nurseId = caregiverRecordId(nurse);
@@ -85,7 +88,10 @@ const PaymentCheckout = () => {
     (async () => {
       try {
         const { data } = await api.get('/payments/razorpay/config');
-        if (!cancelled) setRazorpayEnabled(Boolean(data.enabled));
+        if (!cancelled) {
+          setRazorpayEnabled(Boolean(data.enabled));
+          setCodEnabled(data.codEnabled !== false);
+        }
       } catch {
         if (!cancelled) setRazorpayEnabled(false);
       }
@@ -148,8 +154,11 @@ const PaymentCheckout = () => {
     return `${digits.slice(0, 2)}/${digits.slice(2)}`;
   };
 
+  const isCod = paymentChannel === 'cod';
+
   const payDisabled = useMemo(() => {
     if (submitting || quoteLoading || feeAmount <= 0) return true;
+    if (isCod) return false;
     if (razorpayEnabled) return false;
     if (method === 'card') {
       return (
@@ -163,7 +172,7 @@ const PaymentCheckout = () => {
       return !/^[\w.-]+@[\w]+$/.test(upiId.trim());
     }
     return false;
-  }, [submitting, quoteLoading, feeAmount, razorpayEnabled, method, cardDigits, cardExpiryDigits, cardCvv, cardName, upiId]);
+  }, [submitting, quoteLoading, feeAmount, isCod, razorpayEnabled, method, cardDigits, cardExpiryDigits, cardCvv, cardName, upiId]);
 
   const completeBooking = async (paymentPayload) => {
     const scheduleNote = scheduledAt
@@ -185,7 +194,11 @@ const PaymentCheckout = () => {
     const s = getSocket();
     if (s) s.emit('request:join', data.request._id);
 
-    toast.success(`Paid ${fmtInr(feeAmount)} · Booked with ${nurse.name}`);
+    toast.success(
+      paymentPayload.paymentMethod === 'cod'
+        ? `Booked with Cash on Delivery · Pay ${fmtInr(feeAmount)} to ${nurse.name} on visit`
+        : `Paid ${fmtInr(feeAmount)} · Booked with ${nurse.name}`
+    );
     navigate('/dashboard', {
       replace: true,
       state: {
@@ -201,6 +214,11 @@ const PaymentCheckout = () => {
     setSubmitting(true);
 
     try {
+      if (isCod) {
+        await completeBooking({ paymentMethod: 'cod' });
+        return;
+      }
+
       if (razorpayEnabled) {
         const scriptReady = await loadRazorpayScript();
         if (!scriptReady) {
@@ -252,7 +270,7 @@ const PaymentCheckout = () => {
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Payment failed');
     } finally {
-      if (!razorpayEnabled) setSubmitting(false);
+      if (!razorpayEnabled || isCod) setSubmitting(false);
     }
   };
 
@@ -354,9 +372,11 @@ const PaymentCheckout = () => {
               </div>
             </div>
             <p className="text-[10px] text-slate-500 leading-relaxed px-1">
-              {razorpayEnabled
-                ? 'Pay with UPI, cards, or netbanking via Razorpay. Your booking is confirmed only after successful payment.'
-                : 'Local dev mode — payment is simulated. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET to backend/.env for real checkout.'}
+              {isCod
+                ? 'Pay your caregiver in cash when they arrive. Your booking is confirmed without online payment.'
+                : razorpayEnabled
+                  ? 'Pay with UPI, cards, or netbanking via Razorpay. Your booking is confirmed only after successful payment.'
+                  : 'Local dev mode — payment is simulated. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET to backend/.env for real checkout.'}
             </p>
           </aside>
 
@@ -367,7 +387,44 @@ const PaymentCheckout = () => {
             </div>
 
             <div className="p-4 space-y-4">
-              {!razorpayEnabled ? (
+              {codEnabled ? (
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentChannel('online')}
+                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-semibold border transition-all ${
+                      paymentChannel === 'online'
+                        ? 'border-brand-500 bg-brand-50 text-brand-900 ring-1 ring-brand-500/20'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    <CreditCard className="w-3.5 h-3.5" />
+                    Pay online
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentChannel('cod')}
+                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-semibold border transition-all ${
+                      paymentChannel === 'cod'
+                        ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-600/20'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    <Banknote className="w-3.5 h-3.5" />
+                    Cash on delivery
+                  </button>
+                </div>
+              ) : null}
+
+              {isCod ? (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-sm text-emerald-900 space-y-2">
+                  <p className="font-semibold">Pay when the caregiver arrives</p>
+                  <p className="text-emerald-800/90 text-xs leading-relaxed">
+                    Keep {fmtInr(displayAmount)} ready in cash. The caregiver will confirm payment when the visit is
+                    completed.
+                  </p>
+                </div>
+              ) : !razorpayEnabled ? (
               <>
               <div className="flex flex-col sm:flex-row gap-2">
                 {tabBtn('card', 'Card', CreditCard)}
@@ -507,10 +564,18 @@ const PaymentCheckout = () => {
                 type="button"
                 disabled={payDisabled}
                 onClick={confirmPayment}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-45 disabled:pointer-events-none transition-all"
+                className={`w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-white shadow-lg disabled:opacity-45 disabled:pointer-events-none transition-all ${
+                  isCod
+                    ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 shadow-emerald-600/25 hover:from-emerald-700 hover:to-emerald-800'
+                    : 'bg-gradient-to-r from-emerald-600 to-emerald-700 shadow-emerald-600/25 hover:from-emerald-700 hover:to-emerald-800'
+                }`}
               >
                 <Lock className="w-[1.05rem] h-[1.05rem]" strokeWidth={2} aria-hidden />
-                {submitting ? 'Processing…' : `Pay ${fmtInr(displayAmount)}`}
+                {submitting
+                  ? 'Processing…'
+                  : isCod
+                    ? `Confirm booking · ${fmtInr(displayAmount)} COD`
+                    : `Pay ${fmtInr(displayAmount)}`}
               </button>
 
               <div className="flex flex-wrap justify-center gap-3 text-[10px] text-slate-400 pt-1.5 border-t border-slate-100">

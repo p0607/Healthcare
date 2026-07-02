@@ -420,8 +420,14 @@ exports.myPayments = async (req, res) => {
   try {
     const nurseId = req.user.id;
     const paidJobs = await prisma.serviceRequest.findMany({
-      where: { nurseId, paidAt: { not: null } },
-      orderBy: { paidAt: 'desc' },
+      where: {
+        nurseId,
+        OR: [
+          { paidAt: { not: null } },
+          { paymentMethod: 'cod', status: { not: 'cancelled' } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
       include: { user: true },
       take: 100,
     });
@@ -432,16 +438,27 @@ exports.myPayments = async (req, res) => {
 
     const transactions = paidJobs.map((r) => {
       const amount = Number(r.feeAmount) || 0;
-      const settled = r.status === 'completed';
-      if (settled) {
+      const isCod = r.paymentMethod === 'cod';
+      const settled = r.status === 'completed' && (isCod ? Boolean(r.paidAt) : true);
+      const codPending = isCod && !r.paidAt && r.status !== 'cancelled';
+
+      if (settled && r.paidAt) {
         totalReceived += amount;
         completedCount += 1;
-      } else if (r.status !== 'cancelled') {
+      } else if (!codPending && r.status !== 'cancelled' && r.paidAt) {
+        pendingSettlement += amount;
+      } else if (codPending) {
         pendingSettlement += amount;
       }
+
+      let paymentStatus = 'pending_settlement';
+      if (r.status === 'cancelled') paymentStatus = 'refunded';
+      else if (codPending) paymentStatus = 'cod_pending';
+      else if (settled) paymentStatus = 'paid_out';
+
       return {
         ...toRequest(r),
-        paymentStatus: settled ? 'paid_out' : r.status === 'cancelled' ? 'refunded' : 'pending_settlement',
+        paymentStatus,
       };
     });
 
