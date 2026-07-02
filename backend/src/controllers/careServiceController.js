@@ -96,7 +96,10 @@ exports.create = async (req, res) => {
       data: {
         label: trimmed,
         description: description?.trim() || null,
-        imageUrl: imageUrl === null || imageUrl === '' ? null : String(imageUrl).trim(),
+        imageUrl:
+          imageUrl === undefined || imageUrl === null || imageUrl === ''
+            ? null
+            : String(imageUrl).trim(),
         serviceType: st,
         rate: r,
         sortOrder: Number.isFinite(Number(sortOrder)) ? Number(sortOrder) : 0,

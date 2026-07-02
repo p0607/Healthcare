@@ -148,7 +148,7 @@ const AdminVisitOptions = () => {
       toast.success('Service added');
       loadCareOpts();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not add');
+      toast.error(err?.response?.data?.message || err?.message || 'Could not add');
     }
   };
 

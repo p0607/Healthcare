@@ -36,10 +36,14 @@ const authorize =
   };
 
 const {
-  requireAdmin,
-  requireSuperAdmin,
+  requireAdmin: requireAdminGate,
+  requireSuperAdmin: requireSuperAdminGate,
   requirePermission,
 } = require('../lib/adminPermissions');
+
+/** Pre-built middleware — routes must not pass the factory without calling it. */
+const requireAdmin = requireAdminGate();
+const requireSuperAdmin = requireSuperAdminGate();
 
 module.exports = {
   protect,
