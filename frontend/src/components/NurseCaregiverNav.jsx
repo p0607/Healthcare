@@ -7,6 +7,7 @@ import {
   UserCircle2,
   Wallet,
 } from 'lucide-react';
+import BrandLogo from './BrandLogo.jsx';
 
 export const NURSE_MENU_ITEMS = [
   { id: 'profile', label: 'Profile', path: '/nurse/profile', Icon: UserCircle2 },
@@ -38,6 +39,9 @@ const NurseCaregiverNav = ({ activeId }) => {
 
   return (
     <aside className="group/sbar dashboard-sidebar">
+      <div className="hidden lg:flex px-2 pt-2 pb-3 border-b border-glass-border/40 mb-2">
+        <BrandLogo size="sm" to="/nurse" showTagline />
+      </div>
       <nav className="flex flex-row lg:flex-col py-2 px-2 lg:px-1.5 gap-1 justify-between lg:justify-start overflow-x-auto lg:overflow-x-visible">
         <button
           type="button"

@@ -7,6 +7,8 @@ import { patientProfileCompletion } from '../lib/patientProfile';
 import ProfileUploadRing from './dashboard/ProfileUploadRing.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
 import MobileNavDrawer from './ui/MobileNavDrawer.jsx';
+import BrandLogo from './BrandLogo.jsx';
+import { APP_NAME } from '@nursecare/shared';
 import { cn } from '../lib/utils';
 
 const PUBLIC_NAV_LINKS = [
@@ -69,12 +71,7 @@ const Navbar = () => {
   return (
     <header className="nav-glass">
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
-        <Link to="/" className="flex items-center gap-2 z-10 group shrink-0" onClick={closeMenu}>
-          <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-600 via-brand-600 to-violet-600 grid place-items-center text-white text-xs font-black shadow-[0_0_20px_-4px_rgba(239,68,68,0.45)]">
-            911
-          </span>
-          <span className="font-bold text-base tracking-tight text-gradient-brand">911</span>
-        </Link>
+        <BrandLogo to="/" size="md" onClick={closeMenu} />
 
         <nav className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-5 lg:gap-6 text-sm font-medium">
           {navLinks.map((item) =>
@@ -174,7 +171,7 @@ const Navbar = () => {
         </div>
       </div>
 
-      <MobileNavDrawer open={menuOpen} onClose={closeMenu} title="911 menu">
+      <MobileNavDrawer open={menuOpen} onClose={closeMenu} title={`${APP_NAME} menu`}>
         <nav className="flex flex-col gap-1" aria-label="Mobile navigation">
           {navLinks.map((item) =>
             item.to ? (

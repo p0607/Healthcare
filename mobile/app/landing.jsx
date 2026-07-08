@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SERVICE_PILLARS } from '@nursecare/shared';
 import PillarImageTile from '../src/components/PillarImageTile';
 import GuestOnly from '../src/components/GuestOnly';
+import BrandLogo from '../src/components/BrandLogo';
 import { useAuth } from '../src/context/AuthContext';
 import { navigateForUser } from '../src/lib/accountKinds';
 import { getPillarImage, PILLAR_BORDER_COLORS } from '../src/lib/serviceImages';
@@ -78,12 +79,7 @@ export default function LandingScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Top bar: brand + sign in */}
       <View style={styles.topBar}>
-        <View style={styles.brandRow}>
-          <View style={styles.logoBadge}>
-            <Text style={styles.logoText}>V</Text>
-          </View>
-          <Text style={styles.brandName}>Vytal</Text>
-        </View>
+        <BrandLogo size="md" showTagline />
         <Pressable onPress={goPrimary} hitSlop={8}>
           <Text style={styles.signIn}>Sign in</Text>
         </Pressable>
@@ -148,7 +144,7 @@ export default function LandingScreen() {
         </View>
 
         {/* Why families choose us */}
-        <Text style={styles.sectionTitle}>Why families choose Vytal</Text>
+        <Text style={styles.sectionTitle}>Why families choose Care360</Text>
         <View style={styles.featureGrid}>
           {FEATURES.map((f) => (
             <View key={f.title} style={styles.featureCard}>

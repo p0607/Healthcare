@@ -20,6 +20,7 @@ import { api } from '../lib/api';
 import { getSocket } from '../lib/socket';
 import { getRoute, formatEta, haversineKm } from '../lib/route';
 import { useAuth } from '../context/AuthContext.jsx';
+import BrandLogo from '../components/BrandLogo.jsx';
 import { startCaregiverLocationWatch } from '../lib/caregiverLocationTracking';
 
 const ACTIVE_STATUSES = ['accepted', 'on_the_way', 'in_progress'];
@@ -504,6 +505,9 @@ const NurseDashboard = () => {
     <div className="app-page page-shell-wide">
       <div className="dashboard-layout">
         <aside className="group/sbar dashboard-sidebar">
+          <div className="hidden lg:flex px-2 pt-2 pb-3 border-b border-glass-border/40 mb-2">
+            <BrandLogo size="sm" to="/nurse" showTagline />
+          </div>
           <nav className="flex flex-row lg:flex-col py-2 px-2 lg:px-1.5 gap-1 justify-between lg:justify-start overflow-x-auto lg:overflow-x-visible">
             <button
               type="button"

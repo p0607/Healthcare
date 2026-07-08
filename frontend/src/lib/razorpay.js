@@ -26,7 +26,7 @@ export function openRazorpayCheckout({
   amount,
   currency = 'INR',
   user,
-  description = 'Nurse Care home visit booking',
+  description = 'Care360 home visit booking',
   onSuccess,
   onFailure,
 }) {
@@ -39,7 +39,7 @@ export function openRazorpayCheckout({
     key: keyId,
     amount,
     currency,
-    name: 'Nurse Care',
+    name: 'Care360',
     description,
     order_id: orderId,
     prefill: {

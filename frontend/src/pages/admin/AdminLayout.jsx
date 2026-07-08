@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { ADMIN_TIER_LABELS, isSuperAdminUser } from '@nursecare/shared/adminPermissions';
 import { useAuth } from '../../context/AuthContext.jsx';
+import BrandLogo from '../../components/BrandLogo.jsx';
 import { cn } from '../../lib/utils';
 
 const tabClass = ({ isActive }) =>
@@ -27,10 +28,12 @@ const AdminLayout = () => {
   return (
     <div className="app-page max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center flex-wrap gap-2 sm:gap-3">
-          <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground">
-            Alchemy control center
-          </h1>
+        <div className="flex items-center flex-wrap gap-3 sm:gap-4 min-w-0">
+          <BrandLogo size="sm" to="/admin" />
+          <div className="flex items-center flex-wrap gap-2 sm:gap-3 min-w-0">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground">
+              Control center
+            </h1>
           <span
             className={cn(
               'inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] sm:text-xs font-bold uppercase tracking-wide',
@@ -41,6 +44,7 @@ const AdminLayout = () => {
           >
             {tierLabel}
           </span>
+          </div>
         </div>
         {user?.name ? (
           <p className="text-sm text-muted">

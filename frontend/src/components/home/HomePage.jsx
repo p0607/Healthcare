@@ -26,11 +26,11 @@ const AFTER_DOC_ON_CALL_IMAGE = `${import.meta.env.BASE_URL}images/service-subse
 const FAQ_ITEMS = [
   {
     value: 'what',
-    title: 'What is 911?',
+    title: 'What is Care360?',
     subtitle: 'Platform overview',
     content: (
       <p className="leading-relaxed text-muted">
-        911 is Alchemy Techsol&apos;s home-health marketplace: patients book verified caregivers,
+        Care360 is Alchemy Techsol&apos;s home-health marketplace: patients book verified caregivers,
         professionals receive instant job alerts, and admins monitor city-wide activity on one map.
       </p>
     ),
@@ -357,7 +357,7 @@ const HomePage = () => {
           <ScrollReveal root={scrollRoot}>
             <GlassAccordionSection
               title="Questions & answers"
-              description="Learn how 911 compares to traditional home-care agencies and on-demand health apps."
+              description="Learn how Care360 compares to traditional home-care agencies and on-demand health apps."
               items={FAQ_ITEMS}
               defaultValue="what"
             />

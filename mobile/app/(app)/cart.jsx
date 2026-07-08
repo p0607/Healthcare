@@ -24,6 +24,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useAddress } from '../../src/context/AddressContext';
 import { useBookingCart } from '../../src/context/BookingCartContext';
 import AddressBar from '../../src/components/AddressBar';
+import AppScreenHeader from '../../src/components/AppScreenHeader';
 import CaregiverPickerModal from '../../src/components/CaregiverPickerModal';
 import { api } from '../../src/api/client';
 import { colors, fontSize, radius, spacing } from '../../src/theme/theme';
@@ -200,13 +201,7 @@ export default function CartScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Ionicons name="chevron-back" size={22} color={colors.text} />
-        </Pressable>
-        <Text style={styles.title}>Your cart</Text>
-        <View style={{ width: 22 }} />
-      </View>
+      <AppScreenHeader title="Your cart" />
 
       {items.length === 0 ? (
         <View style={styles.center}>

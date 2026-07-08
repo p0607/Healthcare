@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { caregiverServiceLabel } from '@nursecare/shared';
 import { api, apiErrorMessage } from '../../src/api/client';
 import { connectSocket } from '../../src/lib/socket';
+import AppScreenHeader from '../../src/components/AppScreenHeader';
 import { colors, fontSize, radius, spacing } from '../../src/theme/theme';
 
 const STATUS_META = {
@@ -144,7 +145,7 @@ export default function BookingsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Text style={styles.title}>My bookings</Text>
+      <AppScreenHeader title="My bookings" />
       <FlatList
         data={requests}
         keyExtractor={(item) => String(item._id)}

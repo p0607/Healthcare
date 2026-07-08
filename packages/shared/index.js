@@ -14,3 +14,4 @@ export * from './src/comprehensiveProfile.js';
 export * from './src/caregiverLocation.js';
 export * from './src/sosAlert.js';
 export * from './src/adminPermissions.js';
+export * from './src/brand.js';

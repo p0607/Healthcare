@@ -29,7 +29,7 @@ function getTransporter() {
 
 async function sendMail({ to, subject, text, html }) {
   const from =
-    process.env.SMTP_FROM || process.env.SMTP_USER || '911 Nurse Care <noreply@localhost>';
+    process.env.SMTP_FROM || process.env.SMTP_USER || 'Care360 <noreply@localhost>';
 
   const transport = getTransporter();
   if (!transport) {

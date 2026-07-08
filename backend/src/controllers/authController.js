@@ -753,7 +753,7 @@ exports.requestPasswordResetOtp = async (req, res) => {
       const minutes = Math.max(1, Math.round(OTP_TTL_MS / 60000));
       const mailResult = await sendMail({
         to: email,
-        subject: '911 — password reset code',
+        subject: 'Care360 — password reset code',
         text:
           `Your password reset code is ${otp}.\n\n` +
           `It expires in ${minutes} minutes. If you did not request this, ignore this email.`,

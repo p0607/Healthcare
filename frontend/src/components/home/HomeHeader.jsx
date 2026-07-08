@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  ChevronDown,
-  Menu,
-  Phone,
-} from 'lucide-react';
+import { ChevronDown, Menu, Phone } from 'lucide-react';
+import { APP_NAME } from '@nursecare/shared';
 import ThemeToggle from '../ThemeToggle.jsx';
 import MobileNavDrawer from '../ui/MobileNavDrawer.jsx';
+import BrandLogo from '../BrandLogo.jsx';
 import {
   buildServiceLink,
   SERVICE_ICONS,
@@ -41,17 +39,7 @@ const HomeHeader = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5">
         {/* Phone: logo + menu | Tablet+: full bar */}
         <div className="flex items-center justify-between gap-3">
-          <Link
-            to="/"
-            className="flex items-center gap-2.5 shrink-0 group"
-            aria-label="911 home"
-            onClick={closeMenu}
-          >
-            <span className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-rose-600 via-brand-600 to-violet-600 grid place-items-center text-white text-xs sm:text-sm font-black tracking-tighter shadow-[0_0_24px_-4px_rgba(239,68,68,0.45)] group-hover:scale-105 transition-transform">
-              911
-            </span>
-            <span className="font-bold text-lg sm:text-xl tracking-tight text-gradient-brand">911</span>
-          </Link>
+          <BrandLogo to="/" size="md" onClick={closeMenu} />
 
           {/* Desktop / large tablet nav */}
           <nav
@@ -213,7 +201,7 @@ const HomeHeader = ({
         </div>
       </div>
 
-      <MobileNavDrawer open={menuOpen} onClose={closeMenu} title="911" breakpointClass="lg:hidden">
+      <MobileNavDrawer open={menuOpen} onClose={closeMenu} title={APP_NAME} breakpointClass="lg:hidden">
         <div className="flex flex-col gap-1">
           <Link to="/login" className={mobileBtn} onClick={closeMenu}>
             Sign in

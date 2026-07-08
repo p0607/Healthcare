@@ -2,7 +2,7 @@
  * Patient dashboard Home — mobile mirror of the web UserDashboard.
  *
  * Layout (top → bottom), matching the web:
- *   1. Header: 911 logo, profile-completeness %, Logout
+ *   1. Header: Care360 logo, profile-completeness %, Logout
  *   2. Sub-header: Monitoring status, location, Cart
  *   3. Care tabs: Homecare / Wellness / Health monitor
  *   4. Tab content (Homecare = 4 service cards + full-width SOS slide)
@@ -32,6 +32,7 @@ import { api, apiErrorMessage } from '../../src/api/client';
 import AddressBar from '../../src/components/AddressBar';
 import OngoingVisitsSection from '../../src/components/OngoingVisitsSection';
 import ProfileCompletionPie from '../../src/components/ProfileCompletionPie';
+import BrandLogo from '../../src/components/BrandLogo';
 import SosSlideControl from '../../src/components/SosSlideControl';
 import { colors, fontSize, radius, spacing } from '../../src/theme/theme';
 
@@ -112,11 +113,8 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* 1. Header */}
       <View style={styles.header}>
-        <View style={styles.brandRow}>
-          <View style={styles.logoBadge}>
-            <Text style={styles.logoText}>V</Text>
-          </View>
-          <Text style={styles.brandName}>Vytal</Text>
+        <View style={styles.brandSlot}>
+          <BrandLogo size="md" showTagline />
         </View>
         <View style={styles.headerRight}>
           <Pressable style={styles.profileRingBtn} onPress={() => router.push('/(app)/profile')}>
@@ -273,18 +271,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    gap: spacing.sm,
   },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  logoBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.sm,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoText: { color: colors.white, fontWeight: '800', fontSize: 12 },
-  brandName: { fontSize: fontSize.lg, fontWeight: '800', color: colors.brand },
+  brandSlot: { flex: 1, minWidth: 0 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   profileRingBtn: {
     alignItems: 'center',

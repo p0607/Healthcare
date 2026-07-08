@@ -16,6 +16,7 @@ import Screen from '../../src/components/Screen';
 import Button from '../../src/components/Button';
 import TextField from '../../src/components/TextField';
 import ServiceRegistrationPicker from '../../src/components/ServiceRegistrationPicker';
+import BrandLogo from '../../src/components/BrandLogo';
 import { useAuth } from '../../src/context/AuthContext';
 import { api, apiErrorMessage } from '../../src/api/client';
 import {
@@ -158,7 +159,7 @@ export default function RegisterScreen() {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <Text style={styles.brand}>Vytal</Text>
+            <BrandLogo size="lg" showTagline />
             <Text style={styles.title}>Create account</Text>
             <Text style={styles.subtitle}>Choose your role and fill in your details.</Text>
           </View>

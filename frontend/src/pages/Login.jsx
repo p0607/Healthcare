@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext.jsx';
 import { LOGIN_KIND_LABELS, navigateForUser } from '../lib/accountKinds';
 import GuestOnly from '../components/GuestOnly.jsx';
+import BrandLogo from '../components/BrandLogo.jsx';
 
 const STAFF_ROLES = [
   { id: 'user', label: 'Patient', icon: '🧑', desc: 'Book home care' },
@@ -130,6 +131,9 @@ const Login = () => {
       <GuestOnly>
       <div className="app-page flex min-h-[calc(100dvh-5rem)] w-full flex-col items-center justify-center px-4 py-8 sm:py-12">
         <div className="w-full max-w-md animate-fade-in">
+          <div className="flex justify-center mb-5">
+            <BrandLogo size="lg" showTagline />
+          </div>
           <div className="text-center mb-6 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">{pageTitle}</h1>
             <p className="mt-2 text-sm sm:text-base text-muted">{pageSubtitle}</p>
@@ -176,6 +180,9 @@ const Login = () => {
     <GuestOnly>
     <div className="app-page flex min-h-[calc(100dvh-5rem)] w-full flex-col items-center justify-center px-4 py-8 sm:py-12">
       <div className="w-full max-w-md animate-fade-in">
+        <div className="flex justify-center mb-5">
+          <BrandLogo size="lg" showTagline />
+        </div>
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">{pageTitle}</h1>
           <p className="mt-2 text-sm sm:text-base text-muted">{pageSubtitle}</p>

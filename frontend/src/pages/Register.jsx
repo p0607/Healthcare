@@ -7,6 +7,7 @@ import { REGISTER_ACCOUNT_KINDS, navigateForUser } from '../lib/accountKinds';
 import { labelForRegisterServiceType } from '../lib/useAvailableCareTypes';
 import ServiceRegistrationPicker from '../components/register/ServiceRegistrationPicker.jsx';
 import GuestOnly from '../components/GuestOnly.jsx';
+import BrandLogo from '../components/BrandLogo.jsx';
 
 const SPECIALIZATION_PLACEHOLDER = {
   nurse_visit: 'e.g. General nursing, ICU, pediatrics',
@@ -165,11 +166,14 @@ const Register = () => {
     <GuestOnly>
     <div className="register-page h-full min-h-0 flex flex-col bg-canvas">
       <header className="shrink-0 flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 lg:px-8 py-3 border-b border-glass-border/50 nav-glass">
-        <div>
-          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">Create your account</h1>
-          <p className="text-xs text-muted mt-0.5 hidden sm:block">
-            Select roles and fill each column — no scrolling needed on desktop
-          </p>
+        <div className="flex items-center gap-4 min-w-0">
+          <BrandLogo size="sm" to="/" />
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">Create your account</h1>
+            <p className="text-xs text-muted mt-0.5 hidden sm:block">
+              Select roles and fill each column — no scrolling needed on desktop
+            </p>
+          </div>
         </div>
         <Link
           to="/login"

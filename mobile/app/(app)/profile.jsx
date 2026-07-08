@@ -37,6 +37,7 @@ import GuardianAccountPanel from '../../src/components/GuardianAccountPanel';
 import ProfileCompletionTimeline from '../../src/components/ProfileCompletionTimeline';
 import ProfileCompletionPie, { ProfileCompletionSummary } from '../../src/components/ProfileCompletionPie';
 import ProfileTabBar from '../../src/components/ProfileTabBar';
+import AppScreenHeader from '../../src/components/AppScreenHeader';
 import SelectField from '../../src/components/SelectField';
 import TextField from '../../src/components/TextField';
 import { useAuth } from '../../src/context/AuthContext';
@@ -621,6 +622,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      <AppScreenHeader title="Profile" />
       {hydrating || !user ? (
         <View style={styles.loadingWrap}>
           <Text style={styles.loadingText}>Loading profile…</Text>

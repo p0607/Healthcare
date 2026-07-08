@@ -42,6 +42,7 @@ import { apiErrorMessage } from '../../src/api/client';
 
 import { LOGIN_AS_OPTIONS, LOGIN_KIND_LABELS, navigateForUser } from '../../src/lib/accountKinds';
 import ConnectionDiagnostics from '../../src/components/ConnectionDiagnostics';
+import BrandLogo from '../../src/components/BrandLogo';
 import { colors, fontSize, spacing } from '../../src/theme/theme';
 
 
@@ -151,6 +152,10 @@ export default function LoginScreen() {
 
         <ScrollView contentContainerStyle={styles.content}>
 
+          <View style={styles.logoWrap}>
+            <BrandLogo size="lg" showTagline />
+          </View>
+
           <Text style={styles.title}>How are you signing in?</Text>
 
           {loginOptions.map((opt) => (
@@ -216,9 +221,11 @@ export default function LoginScreen() {
 
 
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={styles.logoWrap}>
+            <BrandLogo size="lg" showTagline />
+          </View>
 
           <View style={styles.header}>
-
             <Text style={styles.title}>Welcome back</Text>
 
             <SelectField
@@ -309,6 +316,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
 
   content: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl, gap: spacing.lg },
+  logoWrap: { alignItems: 'center', marginBottom: spacing.sm },
 
   backBtn: {
 

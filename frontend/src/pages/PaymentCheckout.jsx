@@ -319,7 +319,7 @@ const PaymentCheckout = () => {
             </div>
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-wider text-white/75">Secure checkout</div>
-              <div className="text-base font-bold text-white">NurseCare Payments</div>
+              <div className="text-base font-bold text-white">Care360 Payments</div>
             </div>
           </div>
           <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/80 rounded-full px-2.5 py-1">

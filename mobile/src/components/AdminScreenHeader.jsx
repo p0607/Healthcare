@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ADMIN_TIER_LABELS, isSuperAdminUser } from '@nursecare/shared/adminPermissions';
 import { useAuth } from '../context/AuthContext';
+import BrandLogo from './BrandLogo';
 import { colors, fontSize, radius, spacing } from '../theme/theme';
 
 export default function AdminScreenHeader({ title, subtitle, showBack = true, right }) {
@@ -27,7 +28,7 @@ export default function AdminScreenHeader({ title, subtitle, showBack = true, ri
         </View>
         <View style={styles.titleRow}>
           <View style={styles.titleBlock}>
-            <Text style={styles.brand}>Alchemy Admin</Text>
+            <BrandLogo size="sm" />
             <Text style={styles.title}>{title}</Text>
             {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
           </View>
@@ -54,8 +55,7 @@ const styles = StyleSheet.create({
   backBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   backSpacer: { width: 32 },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
-  titleBlock: { flex: 1 },
-  brand: { fontSize: 11, fontWeight: '800', color: colors.brand, textTransform: 'uppercase' },
+  titleBlock: { flex: 1, gap: spacing.xs },
   title: { fontSize: fontSize.xl, fontWeight: '800', color: colors.text },
   subtitle: { fontSize: fontSize.sm, color: colors.muted, marginTop: 2, lineHeight: 20 },
   userName: { fontSize: fontSize.xs, color: colors.muted },

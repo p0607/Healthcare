@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { api } from '../lib/api';
 import GuestOnly from '../components/GuestOnly.jsx';
+import BrandLogo from '../components/BrandLogo.jsx';
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
@@ -72,6 +73,9 @@ export default function ForgotPassword() {
     <GuestOnly>
       <div className="app-page flex min-h-[calc(100dvh-5rem)] w-full flex-col items-center justify-center px-4 py-8 sm:py-12">
         <div className="w-full max-w-md animate-fade-in">
+          <div className="flex justify-center mb-5">
+            <BrandLogo size="lg" showTagline />
+          </div>
           <div className="text-center mb-6 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Forgot password</h1>
             <p className="mt-2 text-sm sm:text-base text-muted">

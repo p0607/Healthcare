@@ -46,6 +46,7 @@ import { autoAssignToastMessage, caregiverRecordId } from '../lib/checkout';
 import { subscribeSosNavigate, stopSosAlarm } from '../lib/emergencyAlerts';
 import PatientDashboardRail from '../components/dashboard/PatientDashboardRail.jsx';
 import PatientDashboardSubHeader from '../components/dashboard/PatientDashboardSubHeader.jsx';
+import BrandLogo from '../components/BrandLogo.jsx';
 import PatientDashboardCareTabs, { BotAvatar } from '../components/dashboard/PatientDashboardCareTabs.jsx';
 import BotFloatingPopup from '../components/dashboard/BotFloatingPopup.jsx';
 import { useBookingCart } from '../context/BookingCartContext.jsx';
@@ -1438,6 +1439,9 @@ const UserDashboard = () => {
     <div className="app-page min-h-full">
       <BotFloatingPopup onOpen={openBotAssistant} />
       <div className="page-shell-wide">
+        <div className="flex items-center justify-between gap-3 mb-3 px-0.5">
+          <BrandLogo size="sm" to="/dashboard" showTagline />
+        </div>
         <PatientDashboardSubHeader
           addressControl={addressControl}
           onEmergencyActivate={handleEmergencyActivate}

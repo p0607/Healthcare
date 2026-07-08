@@ -1,17 +1,17 @@
 {
   "expo": {
-    "name": "Vytal",
+    "name": "Care360",
     "slug": "healthcare",
     "scheme": "nursecare",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "icon": "./assets/icon.png",
+    "icon": "./assets/care360-logo.png",
     "splash": {
-      "image": "./assets/icon.png",
+      "image": "./assets/care360-logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#061633"
+      "backgroundColor": "#e8ecef"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
@@ -25,8 +25,8 @@
       "package": "com.nursecare.app",
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#061633"
+        "foregroundImage": "./assets/care360-logo.png",
+        "backgroundColor": "#e8ecef"
       },
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
@@ -48,7 +48,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Vytal to use your location for home visit addresses."
+          "locationWhenInUsePermission": "Allow Care360 to use your location for home visit addresses."
         }
       ]
     ],
