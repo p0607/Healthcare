@@ -2,10 +2,16 @@
 export const DEFAULT_SEED_COORDS = [77.5946, 12.9716];
 
 /**
- * Nurse live tracking: GPS coordinates only (free). Persist + socket emit on this interval.
+ * Nurse live tracking: GPS coordinates only (free). DB persist on this interval.
  * Reverse geocoding is skipped during live tracking to avoid map API / Nominatim load.
  */
 export const CAREGIVER_LIVE_LOCATION_INTERVAL_MS = 3 * 60 * 1000;
+
+/** Socket broadcast interval for live patient map (Zomato-style movement). */
+export const CAREGIVER_SOCKET_EMIT_INTERVAL_MS = 5_000;
+
+/** GPS watch distance filter while actively tracking a visit. */
+export const CAREGIVER_GPS_WATCH_DISTANCE_M = 12;
 
 /** Minimum movement before an early save is considered (still capped by interval). */
 export const CAREGIVER_MIN_MOVE_METERS = 45;
@@ -50,46 +56,54 @@ export function isMisplacedCaregiverCoords(lng, lat) {
 
 /**
  * Reject GPS updates that would teleport or corrupt caregiver location (emulator US default).
- * Allows repairing an already-corrupted profile with valid India GPS.
+ * Allows replacing the Bengaluru seed with a real India fix anywhere in the country.
  */
 export function shouldRejectCaregiverGpsUpdate(savedCoords, lng, lat, { maxJumpKm = 500 } = {}) {
   if (!Number.isFinite(lng) || !Number.isFinite(lat)) return true;
+  if (isLikelyEmulatorDefault(lng, lat)) return true;
+
+  const newInIndia = isInsideIndia(lng, lat);
+  if (!newInIndia) return true;
 
   const savedValid =
     Array.isArray(savedCoords) &&
     savedCoords.length >= 2 &&
     Number.isFinite(savedCoords[0]) &&
     Number.isFinite(savedCoords[1]);
-  const savedInIndia = savedValid && isInsideIndia(savedCoords[0], savedCoords[1]);
-  const newInIndia = isInsideIndia(lng, lat);
-
-  if (!savedInIndia && newInIndia && !isLikelyEmulatorDefault(lng, lat)) {
-    return false;
-  }
-
-  if (!newInIndia || isLikelyEmulatorDefault(lng, lat)) return true;
 
   if (!savedValid) return false;
 
+  // First real GPS fix: replace default Bengaluru seed anywhere in India.
+  if (isDefaultSeedLocation(savedCoords)) return false;
+
+  const savedInIndia = isInsideIndia(savedCoords[0], savedCoords[1]);
+  if (!savedInIndia) return false;
+
   const jumpKm = distanceMeters(savedCoords, [lng, lat]) / 1000;
   if (jumpKm <= maxJumpKm) return false;
-  return isDefaultSeedLocation(savedCoords) || jumpKm > 2000;
+
+  return jumpKm > 2000;
 }
 
 export function caregiverGpsRejectMessage() {
-  return 'GPS location looks invalid (common on emulators). Set mock location to Bengaluru (12.9716, 77.5946) in Extended controls → Location, then refresh.';
+  return 'GPS location looks invalid. Enable location services and try again.';
 }
 
 /**
- * Use device GPS when valid; otherwise fall back to Bengaluru demo coords (emulator US default).
- * Returns null only when coords look valid but the jump is too large to accept.
+ * Use device GPS when valid. Demo Bengaluru fallback is opt-in (emulator/dev only).
+ * Returns null when coords look like a bad jump and demo fallback is disabled.
  */
-export function resolveCaregiverGpsCoordinates(savedCoords, lng, lat) {
+export function resolveCaregiverGpsCoordinates(
+  savedCoords,
+  lng,
+  lat,
+  { allowDemoFallback = false } = {}
+) {
   if (!shouldRejectCaregiverGpsUpdate(savedCoords, lng, lat)) {
     return { lng, lat, usedDemoFallback: false };
   }
 
-  if (isMisplacedCaregiverCoords(lng, lat)) {
+  if (allowDemoFallback && isMisplacedCaregiverCoords(lng, lat)) {
     return {
       lng: DEFAULT_SEED_COORDS[0],
       lat: DEFAULT_SEED_COORDS[1],

@@ -31,14 +31,16 @@ export default function TrackVisitScreen() {
   const [nurseCoords, setNurseCoords] = useState(null);
   const [route, setRoute] = useState(null);
 
-  const loadRequest = useCallback(async () => {
-    setError('');
+  const loadRequest = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setError('');
     try {
       const { data } = await api.get('/requests/mine', { params: { _ts: Date.now() } });
       const found = (data.requests || []).find((r) => String(r._id) === id);
       if (!found) {
-        setError('Booking not found.');
-        setRequest(null);
+        if (!silent) {
+          setError('Booking not found.');
+          setRequest(null);
+        }
         return;
       }
       setRequest(found);
@@ -47,9 +49,9 @@ export default function TrackVisitScreen() {
         (Number.isFinite(found.nurse?.lng) ? [found.nurse.lng, found.nurse.lat] : null);
       if (initial) setNurseCoords(initial);
     } catch (err) {
-      setError(apiErrorMessage(err, 'Could not load booking.'));
+      if (!silent) setError(apiErrorMessage(err, 'Could not load booking.'));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [id]);
 
@@ -58,7 +60,7 @@ export default function TrackVisitScreen() {
   }, [loadRequest]);
 
   useEffect(() => {
-    if (!request || !TRACKING_STATUSES.includes(request.status)) return undefined;
+    if (!id) return undefined;
 
     let mounted = true;
     let detach = () => {};
@@ -66,16 +68,21 @@ export default function TrackVisitScreen() {
     (async () => {
       const socket = await connectSocket();
       if (!socket || !mounted) return;
-      socket.emit('request:join', request._id);
+      socket.emit('request:join', id);
 
-      const onNurseLoc = ({ coordinates }) => {
+      const onNurseLoc = ({ requestId, coordinates }) => {
+        if (String(requestId) !== id) return;
         if (Array.isArray(coordinates) && coordinates.length === 2) {
           setNurseCoords(coordinates);
         }
       };
       const onUpdate = (req) => {
-        if (req?._id !== request._id) return;
+        if (String(req?._id) !== id) return;
         setRequest(req);
+        const coords =
+          req.nurse?.location?.coordinates ||
+          (Number.isFinite(req.nurse?.lng) ? [req.nurse.lng, req.nurse.lat] : null);
+        if (coords) setNurseCoords(coords);
       };
 
       socket.on('nurse:location', onNurseLoc);
@@ -90,7 +97,15 @@ export default function TrackVisitScreen() {
       mounted = false;
       detach();
     };
-  }, [request?._id, request?.status]);
+  }, [id]);
+
+  useEffect(() => {
+    if (!request || !TRACKING_STATUSES.includes(request.status)) return undefined;
+    const timer = setInterval(() => {
+      loadRequest({ silent: true });
+    }, 30_000);
+    return () => clearInterval(timer);
+  }, [request?.status, loadRequest]);
 
   const patientCoords = request?.location?.coordinates;
 
@@ -170,7 +185,7 @@ export default function TrackVisitScreen() {
           <Ionicons name="chevron-back" size={22} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Live tracking</Text>
-        <Pressable onPress={loadRequest} hitSlop={10}>
+        <Pressable onPress={() => loadRequest()} hitSlop={10}>
           <Ionicons name="refresh" size={20} color={colors.brand} />
         </Pressable>
       </View>

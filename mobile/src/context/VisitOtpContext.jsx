@@ -12,22 +12,59 @@ const OTP_POLL_MS = 10_000;
 
 const purposeRank = (purpose) => (purpose === 'complete_visit' ? 2 : 1);
 
-function pickActiveOtpFromRequests(requests) {
+function isOtpExpired(otp) {
+  if (!otp?.expiresAt) return false;
+  return Date.now() >= otp.expiresAt;
+}
+
+function mergePendingOtp(pending, cached, requestId) {
+  if (!pending) return null;
+  if (!pending.otp && !pending.active) return null;
+
+  let otp = pending.otp;
+  if (
+    !otp &&
+    cached?.otp &&
+    String(cached.requestId) === String(requestId) &&
+    cached.purpose === pending.purpose
+  ) {
+    otp = cached.otp;
+  }
+  if (!otp) return null;
+
+  const expiresAt = pending.expiresAt || cached?.expiresAt;
+  if (expiresAt && Date.now() >= expiresAt) return null;
+
+  return {
+    requestId,
+    purpose: pending.purpose,
+    otp,
+    expiresAt,
+  };
+}
+
+function pickActiveOtpFromRequests(requests, cached = null) {
   if (!Array.isArray(requests)) return null;
   let best = null;
   for (const req of requests) {
-    const pending = req?.pendingOtp;
-    if (!pending?.otp) continue;
-    if (!best || purposeRank(pending.purpose) > purposeRank(best.purpose)) {
-      best = {
-        requestId: req._id,
-        purpose: pending.purpose,
-        otp: pending.otp,
-        expiresAt: pending.expiresAt,
-      };
+    const candidate = mergePendingOtp(req?.pendingOtp, cached, req._id);
+    if (!candidate) continue;
+    if (!best || purposeRank(candidate.purpose) > purposeRank(best.purpose)) {
+      best = candidate;
     }
   }
   return best;
+}
+
+function requestStillHasPendingOtp(requests, cached) {
+  if (!cached?.requestId) return false;
+  return (requests || []).some((req) => {
+    if (String(req._id) !== String(cached.requestId)) return false;
+    const pending = req?.pendingOtp;
+    if (!pending) return false;
+    if (pending.purpose && pending.purpose !== cached.purpose) return false;
+    return Boolean(pending.active || pending.otp);
+  });
 }
 
 function otpKey(otp) {
@@ -40,6 +77,11 @@ export function VisitOtpProvider({ children }) {
   const [activeOtp, setActiveOtp] = useState(null);
   const [popupVisible, setPopupVisible] = useState(false);
   const lastShownKeyRef = useRef('');
+  const activeOtpRef = useRef(null);
+
+  useEffect(() => {
+    activeOtpRef.current = activeOtp;
+  }, [activeOtp]);
 
   const isPatient = isAuthenticated && user?.role === 'user';
 
@@ -69,12 +111,21 @@ export function VisitOtpProvider({ children }) {
     }
     try {
       const { data } = await api.get('/requests/mine', { params: { _ts: Date.now() } });
-      const found = pickActiveOtpFromRequests(data.requests);
+      const requests = data.requests || [];
+      const cached = activeOtpRef.current;
+      const found = pickActiveOtpFromRequests(requests, cached);
+
       if (found) {
         presentOtp(found, { forcePopup: otpKey(found) !== lastShownKeyRef.current });
-      } else {
-        presentOtp(null);
+        return;
       }
+
+      if (cached?.otp && !isOtpExpired(cached) && requestStillHasPendingOtp(requests, cached)) {
+        setActiveOtp(cached);
+        return;
+      }
+
+      presentOtp(null);
     } catch {
       /* keep current popup if refresh fails */
     }
@@ -83,24 +134,39 @@ export function VisitOtpProvider({ children }) {
   const applyOtpForRequest = useCallback(
     (requestId, pendingOtp) => {
       if (!requestId) return;
-      if (!pendingOtp?.otp) {
+
+      if (pendingOtp == null) {
         setActiveOtp((cur) => {
-          if (cur?.requestId !== requestId) return cur;
+          if (String(cur?.requestId) !== String(requestId)) return cur;
           setPopupVisible(false);
           lastShownKeyRef.current = '';
           return null;
         });
         return;
       }
-      presentOtp(
-        {
-          requestId,
-          purpose: pendingOtp.purpose,
-          otp: pendingOtp.otp,
-          expiresAt: pendingOtp.expiresAt,
-        },
-        { forcePopup: true }
+
+      const cached = activeOtpRef.current;
+      const merged = mergePendingOtp(
+        pendingOtp,
+        String(cached?.requestId) === String(requestId) ? cached : null,
+        requestId
       );
+
+      if (!merged) {
+        if (pendingOtp.active) {
+          setActiveOtp((cur) => {
+            if (String(cur?.requestId) !== String(requestId) || !cur?.otp) return cur;
+            return {
+              ...cur,
+              purpose: pendingOtp.purpose || cur.purpose,
+              expiresAt: pendingOtp.expiresAt || cur.expiresAt,
+            };
+          });
+        }
+        return;
+      }
+
+      presentOtp(merged, { forcePopup: true });
     },
     [presentOtp]
   );

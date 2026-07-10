@@ -1,8 +1,9 @@
 import * as Location from 'expo-location';
 
 import {
+  CAREGIVER_GPS_WATCH_DISTANCE_M,
   CAREGIVER_LIVE_LOCATION_INTERVAL_MS,
-  CAREGIVER_MIN_MOVE_METERS,
+  CAREGIVER_SOCKET_EMIT_INTERVAL_MS,
   resolveCaregiverGpsCoordinates,
 } from '@nursecare/shared';
 
@@ -31,7 +32,9 @@ export function startCaregiverLocationBroadcast({
   const persistLocation = async (coordinates) => {
     if (saving) return;
     const saved = getSavedCoordinates?.();
-    const resolved = resolveCaregiverGpsCoordinates(saved, coordinates[0], coordinates[1]);
+    const resolved = resolveCaregiverGpsCoordinates(saved, coordinates[0], coordinates[1], {
+      allowDemoFallback: __DEV__,
+    });
     if (!resolved) return;
 
     saving = true;
@@ -49,7 +52,9 @@ export function startCaregiverLocationBroadcast({
   const onPosition = async (pos) => {
     const raw = [pos.coords.longitude, pos.coords.latitude];
     const saved = getSavedCoordinates?.();
-    const resolved = resolveCaregiverGpsCoordinates(saved, raw[0], raw[1]);
+    const resolved = resolveCaregiverGpsCoordinates(saved, raw[0], raw[1], {
+      allowDemoFallback: __DEV__,
+    });
     if (!resolved) return;
 
     const coordinates = [resolved.lng, resolved.lat];
@@ -57,7 +62,7 @@ export function startCaregiverLocationBroadcast({
     const shouldSave = now - lastSaveAt >= CAREGIVER_LIVE_LOCATION_INTERVAL_MS;
 
     const socket = getSocket();
-    if (socket?.connected && now - lastSocketAt >= CAREGIVER_LIVE_LOCATION_INTERVAL_MS) {
+    if (socket?.connected && now - lastSocketAt >= CAREGIVER_SOCKET_EMIT_INTERVAL_MS) {
       lastSocketAt = now;
       getActiveRequests()
         .filter((r) => trackingStatuses.includes(r.status))
@@ -77,9 +82,9 @@ export function startCaregiverLocationBroadcast({
     await connectSocket();
     subscription = await Location.watchPositionAsync(
       {
-        accuracy: Location.Accuracy.Balanced,
-        distanceInterval: CAREGIVER_MIN_MOVE_METERS,
-        timeInterval: CAREGIVER_LIVE_LOCATION_INTERVAL_MS,
+        accuracy: Location.Accuracy.High,
+        distanceInterval: CAREGIVER_GPS_WATCH_DISTANCE_M,
+        timeInterval: CAREGIVER_SOCKET_EMIT_INTERVAL_MS,
       },
       (pos) => {
         onPosition(pos).catch(() => {});

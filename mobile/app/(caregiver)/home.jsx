@@ -90,13 +90,15 @@ export default function CaregiverHomeScreen() {
           if (notify) Alert.alert('Permission needed', msg);
           return false;
         }
-        const pos = await getDeviceCoordinates({ demoFallback: true });
+        const pos = await getDeviceCoordinates({ demoFallback: __DEV__ });
         let lng = pos.coords.longitude;
         let lat = pos.coords.latitude;
 
         const saved = userRef.current?.location?.coordinates;
         const stillOnSeed = isDefaultSeedLocation(userRef.current);
-        const resolved = resolveCaregiverGpsCoordinates(saved, lng, lat);
+        const resolved = resolveCaregiverGpsCoordinates(saved, lng, lat, {
+          allowDemoFallback: __DEV__,
+        });
         if (!resolved) {
           const msg = 'Location change is too large. Move closer or refresh from your current area.';
           setLocationError(msg);

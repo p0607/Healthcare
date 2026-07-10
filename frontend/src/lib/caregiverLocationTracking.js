@@ -2,13 +2,14 @@ import { api } from './api';
 import { getSocket } from './socket';
 import {
   CAREGIVER_LIVE_LOCATION_INTERVAL_MS,
+  CAREGIVER_SOCKET_EMIT_INTERVAL_MS,
   resolveCaregiverGpsCoordinates,
 } from '@nursecare/shared';
 
 /**
  * Watch device GPS, persist lng/lat on the caregiver profile, and broadcast live position.
  * Uses OpenStreetMap policy: no reverse-geocode during live tracking (coordinates only).
- * Updates are throttled to every 3 minutes to limit server and geocoder load.
+ * Updates are throttled to every 3 minutes for DB persistence; socket emits every 5s.
  */
 export function startCaregiverLocationWatch({
   enabled = true,
@@ -27,7 +28,9 @@ export function startCaregiverLocationWatch({
 
   const persistLocation = async (coordinates, savedCoords) => {
     if (saving) return;
-    const resolved = resolveCaregiverGpsCoordinates(savedCoords, coordinates[0], coordinates[1]);
+    const resolved = resolveCaregiverGpsCoordinates(savedCoords, coordinates[0], coordinates[1], {
+      allowDemoFallback: false,
+    });
     if (!resolved) {
       console.warn('caregiver location save skipped: GPS jump too large');
       return;
@@ -47,7 +50,9 @@ export function startCaregiverLocationWatch({
 
   const onPosition = async (pos) => {
     const saved = getSavedCoordinates?.();
-    const resolved = resolveCaregiverGpsCoordinates(saved, pos.coords.longitude, pos.coords.latitude);
+    const resolved = resolveCaregiverGpsCoordinates(saved, pos.coords.longitude, pos.coords.latitude, {
+      allowDemoFallback: false,
+    });
     if (!resolved) return;
 
     const coordinates = [resolved.lng, resolved.lat];
@@ -58,7 +63,7 @@ export function startCaregiverLocationWatch({
     const shouldSave = intervalElapsed;
 
     const socket = getSocket();
-    if (socket && now - lastSocketAt >= CAREGIVER_LIVE_LOCATION_INTERVAL_MS) {
+    if (socket && now - lastSocketAt >= CAREGIVER_SOCKET_EMIT_INTERVAL_MS) {
       lastSocketAt = now;
       getAssigned()
         .filter((r) => gpsTrackingStatuses.includes(r.status))
@@ -76,7 +81,7 @@ export function startCaregiverLocationWatch({
       onPosition(pos).catch(() => {});
     },
     (err) => console.warn('caregiver geolocation:', err.message),
-    { enableHighAccuracy: true, maximumAge: CAREGIVER_LIVE_LOCATION_INTERVAL_MS, timeout: 15000 }
+    { enableHighAccuracy: true, maximumAge: CAREGIVER_SOCKET_EMIT_INTERVAL_MS, timeout: 15000 }
   );
 
   navigator.geolocation.getCurrentPosition(

@@ -2,7 +2,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { APP_LOGO_ALT, APP_NAME, APP_TAGLINE } from '@nursecare/shared';
 import { colors, fontSize, radius } from '../theme/theme';
 
-const logoSource = require('../../assets/care360-logo.png');
+const logoSource = require('../../assets/brand-logo.png');
 
 const SIZES = {
   sm: { image: 32, name: fontSize.sm },
